@@ -1,41 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Nebulas Overlay Console</title>
-<link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Console</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #0a0a0a;
+        color: white;
+        padding: 20px;
+    }
+    .panel {
+        background: #111;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        width: 400px;
+    }
+    input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 6px;
+        background: #222;
+        border: 1px solid #444;
+        color: white;
+        border-radius: 5px;
+    }
+    label {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+</style>
 </head>
 <body>
 
-<header>Overlay Control Console</header>
+<h1>Overlay Console</h1>
 
-<main>
-  <!-- Spotify Panel -->
-  <div class="panel">
-    <h2>Spotify / Now Playing</h2>
-    <button id="login-btn">Connect Spotify</button>
+<div class="panel">
+    <h2>Team Settings</h2>
 
-    <div id="current-track" class="hidden">
-      <p id="track-text">Not playing</p>
-    </div>
-  </div>
+    <label>Team Top Tag</label>
+    <input id="teamTopInput" placeholder="[TEAM1]">
 
-  <!-- Intermission Settings -->
-  <div class="panel">
-    <h2>Intermission</h2>
+    <label>Team Bottom Tag</label>
+    <input id="teamBottomInput" placeholder="[TEAM2]">
+</div>
 
-    <label>Team 1 Tag</label>
-    <input id="team1" placeholder="[TLV]">
+<script>
+function save(key, value) {
+    localStorage.setItem(key, value);
 
-    <label>Team 2 Tag</label>
-    <input id="team2" placeholder="[SRG]">
+    // Trigger update for other tabs (intermission overlay)
+    window.dispatchEvent(new StorageEvent("storage", {
+        key: key,
+        newValue: value
+    }));
+}
 
-    <button id="save-tags">Save Tags</button>
-  </div>
-</main>
+document.getElementById("teamTopInput").addEventListener("input", e => {
+    save("team_top_tag", e.target.value);
+});
 
-<script src="spotify.js"></script>
-<script src="console.js"></script>
+document.getElementById("teamBottomInput").addEventListener("input", e => {
+    save("team_bottom_tag", e.target.value);
+});
+
+// Load existing values on console startup
+document.getElementById("teamTopInput").value = localStorage.getItem("team_top_tag") || "";
+document.getElementById("teamBottomInput").value = localStorage.getItem("team_bottom_tag") || "";
+</script>
 
 </body>
 </html>
