@@ -1,21 +1,394 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Nebula Intermission Panel</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Intermission — Console (Spotify)</title>
+<style>
+  /* Simple, sleek layout */
+  :root {
+    --bg: #0f1724;
+    --card: #0b1220cc;
+    --muted: #98a0b3;
+    --accent: #1db954;
+    --panel-w: 780px;
+  }
+  html,body { height:100%; margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: linear-gradient(180deg,#071022 0%, #0b1220 100%); color:#e6eef8; }
+  .wrap { max-width:1200px; margin:36px auto; padding:28px; display:grid; grid-template-columns: 1fr 420px; gap:28px; align-items:start; }
+  .panel { background:var(--card); border-radius:12px; padding:18px; box-shadow: 0 6px 24px rgba(2,6,23,0.6); }
+  h1 { margin:0 0 8px 0; font-size:20px; color:#fff; letter-spacing:0.2px; }
+  p.muted { color:var(--muted); margin:6px 0 12px 0; font-size:13px; }
+  .controls { display:flex; gap:12px; align-items:center; margin-top:16px; }
+  button { background:#0b74ff; border:none; padding:10px 14px; color:white; font-weight:600; border-radius:8px; cursor:pointer; }
+  button.secondary { background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--muted); }
+  .right { background: linear-gradient(180deg,#071022 0%, #071622 100%); padding:18px; border-radius:12px; }
+  .marquee-outer { overflow:hidden; width:100%; height:42px; display:flex; align-items:center; position:relative; margin-top:12px; border-radius:8px; background: rgba(255,255,255,0.02); }
+  .marquee-inner { white-space:nowrap; display:inline-block; padding-left:100%; will-change:transform; animation: scroll-left linear infinite; font-weight:600; font-size:18px; color:#fff; padding-right:100%; }
+  @keyframes scroll-left {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-100%); }
+  }
+  .hidden { display:none !important; }
+  .info-row { display:flex; gap:8px; align-items:center; margin-top:10px; }
+  .small { font-size:13px; color:var(--muted); }
+  .spotify-id-input { width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:#fff; }
+  .center-hint { text-align:center; color:var(--muted); font-size:13px; margin-top:16px; }
+  footer { text-align:center; color:var(--muted); font-size:12px; margin-top:26px; }
+</style>
 </head>
 <body>
 
-<div class="container">
-    <h1>🎧 Spotify Now Playing Setup</h1>
+<div class="wrap">
+  <div class="panel">
+    <h1>Intermission — Spotify (Now playing)</h1>
+    <p class="muted">Log in with Spotify to display the current playing song in the intermission overlay. This uses the Authorization Code + PKCE flow (no client secret required).</p>
 
-    <button id="login-btn">Login With Spotify</button>
-
-    <div id="song-marquee" class="hidden">
-        <span id="scroll-text"></span>
+    <!-- Login / Logout -->
+    <div class="controls">
+      <button id="login-btn">Login with Spotify</button>
+      <button id="logout-btn" class="secondary hidden">Logout</button>
+      <div style="flex:1;"></div>
+      <div class="small">Status: <span id="status-text">Not connected</span></div>
     </div>
+
+    <!-- Spotify ID replacement input (optional) -->
+    <div style="margin-top:14px;">
+      <label class="small">Optional: Set Spotify display ID (shows in place of 'Music')</label>
+      <input id="spotify-id" class="spotify-id-input" placeholder="Enter display ID (eg: NebulaOne) or leave blank to use current track" />
+    </div>
+
+    <div class="center-hint small">When a song plays, the marquee will appear and scroll infinitely. If nothing's playing, it remains hidden.</div>
+
+    <div style="margin-top:18px;" class="small">Notes:</div>
+    <ul class="small" style="margin:6px 0 0 18px; color:var(--muted);">
+      <li>Make sure the redirect URI you added to your Spotify app is <b>exactly</b> this page URL. Trailing slash and path must match.</li>
+      <li>Scopes requested: <code>user-read-playback-state</code> and <code>user-read-currently-playing</code>.</li>
+      <li>If your browser blocks the token exchange (CORS), you will need a tiny server endpoint to exchange the code for tokens.</li>
+    </ul>
+
+    <footer>Intermission control • PKCE auth — no client secret required</footer>
+  </div>
+
+  <div class="right panel">
+    <h1 style="font-size:16px">Marquee / Now Playing</h1>
+    <p class="muted">This will be output to your overlay HTML (you can copy the text or hook it to your overlay directly).</p>
+
+    <div id="song-marquee" class="marquee-outer hidden" aria-hidden="true">
+      <div id="scroll-text" class="marquee-inner">Loading…</div>
+    </div>
+
+    <div id="meta" class="info-row">
+      <div class="small">Song:</div>
+      <div style="flex:1" id="song-meta" class="small" title=""></div>
+    </div>
+
+    <div style="margin-top:10px;" class="small">Manual token (advanced)</div>
+    <div style="margin-top:8px;">
+      <input id="manual-token" class="spotify-id-input" placeholder="Paste access token here (optional)" />
+      <div style="margin-top:8px; display:flex; gap:8px;">
+        <button id="apply-token" class="secondary">Apply token</button>
+        <button id="clear-token" class="secondary">Clear token</button>
+      </div>
+      <div class="small" style="margin-top:8px;color:var(--muted)">Only use manual paste for testing. Do not commit tokens to repo.</div>
+    </div>
+  </div>
 </div>
 
-<script src="script.js"></script>
+<script>
+/* -------------------------
+   Configuration - edit these
+   ------------------------- */
+const clientId = "36304abf3c674b89ba2489ab3e554e0b"; // your client id
+const redirectUri = "https://nebulaone20.github.io/Nebulas-Valorant-Overlay/console/"; // must exactly match Spotify dashboard
+const scopes = "user-read-playback-state user-read-currently-playing";
+
+/* -------------------------
+   UI elements
+   ------------------------- */
+const loginBtn = document.getElementById("login-btn");
+const logoutBtn = document.getElementById("logout-btn");
+const statusText = document.getElementById("status-text");
+const songMarquee = document.getElementById("song-marquee");
+const scrollText = document.getElementById("scroll-text");
+const songMeta = document.getElementById("song-meta");
+const spotifyIdInput = document.getElementById("spotify-id");
+const manualTokenInput = document.getElementById("manual-token");
+const applyTokenBtn = document.getElementById("apply-token");
+const clearTokenBtn = document.getElementById("clear-token");
+
+let accessToken = null;
+let pollInterval = null;
+
+/* -------------------------
+   Helper: PKCE functions
+   ------------------------- */
+function dec2hex(dec) {
+  return ('0' + dec.toString(16)).substr(-2)
+}
+
+function generateCodeVerifier(length = 128) {
+  const array = new Uint8Array(length);
+  window.crypto.getRandomValues(array);
+  return Array.from(array, dec2hex).join('');
+}
+
+async function sha256(plain) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(plain);
+  const hash = await window.crypto.subtle.digest('SHA-256', data);
+  return new Uint8Array(hash);
+}
+
+function base64UrlEncode(arrayBuffer) {
+  let str = '';
+  const bytes = new Uint8Array(arrayBuffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    str += String.fromCharCode(bytes[i]);
+  }
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function createCodeChallenge(verifier) {
+  const hashed = await sha256(verifier);
+  return base64UrlEncode(hashed);
+}
+
+/* -------------------------
+   Auth flow
+   ------------------------- */
+async function authRedirect() {
+  const verifier = generateCodeVerifier();
+  const challenge = await createCodeChallenge(verifier);
+  localStorage.setItem('pkce_code_verifier', verifier);
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: clientId,
+    scope: scopes,
+    redirect_uri: redirectUri,
+    code_challenge_method: 'S256',
+    code_challenge: challenge
+  });
+
+  // Redirect to Spotify
+  window.location = 'https://accounts.spotify.com/authorize?' + params.toString();
+}
+
+/* -------------------------
+   Exchange code -> token (PKCE)
+   ------------------------- */
+async function exchangeCodeForToken(code) {
+  const verifier = localStorage.getItem('pkce_code_verifier');
+  if (!verifier) throw new Error('No code verifier found in localStorage.');
+
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code: code,
+    redirect_uri: redirectUri,
+    client_id: clientId,
+    code_verifier: verifier
+  });
+
+  // POST to token endpoint
+  const resp = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: body.toString()
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error('Token exchange failed: ' + resp.status + ' ' + text);
+  }
+
+  const data = await resp.json();
+  // data contains access_token, token_type, expires_in, refresh_token (if granted)
+  localStorage.setItem('spotify_auth', JSON.stringify(data));
+  return data;
+}
+
+/* -------------------------
+   Start polling currently playing
+   ------------------------- */
+async function fetchNowPlaying(token) {
+  const resp = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+    headers: { Authorization: 'Bearer ' + token }
+  });
+
+  if (resp.status === 204 || resp.status === 202) {
+    // nothing playing
+    return null;
+  }
+  if (!resp.ok) {
+    // unauthorized or other error
+    const errText = await resp.text().catch(()=>'');
+    throw new Error('Now playing fetch failed: ' + resp.status + ' ' + errText);
+  }
+
+  return resp.json();
+}
+
+function showMarquee(text, durationSec = null) {
+  scrollText.textContent = text;
+  // compute animation duration proportional to text length (so scroll isn't too fast/slow)
+  const pxPerChar = 12; // heuristic
+  const containerWidth = songMarquee.offsetWidth || 600;
+  const estimatedWidth = Math.max(containerWidth, text.length * pxPerChar);
+  const duration = durationSec || Math.max(8, Math.ceil(estimatedWidth / 60) * 4);
+  scrollText.style.animationDuration = duration + 's';
+  songMarquee.classList.remove('hidden');
+}
+
+function hideMarquee() {
+  songMarquee.classList.add('hidden');
+}
+
+/* -------------------------
+   UI & session management
+   ------------------------- */
+function applyStoredAuth() {
+  const raw = localStorage.getItem('spotify_auth');
+  if (!raw) return false;
+  try {
+    const data = JSON.parse(raw);
+    accessToken = data.access_token;
+    // basic expiry check not implemented here: if fails on fetch we'll re-auth
+    return !!accessToken;
+  } catch (e){ return false; }
+}
+
+function setConnectedUI() {
+  loginBtn.classList.add('hidden');
+  logoutBtn.classList.remove('hidden');
+  statusText.textContent = 'Connected';
+}
+
+function setDisconnectedUI() {
+  loginBtn.classList.remove('hidden');
+  logoutBtn.classList.add('hidden');
+  statusText.textContent = 'Not connected';
+}
+
+/* -------------------------
+   Main polling loop
+   ------------------------- */
+async function startPolling() {
+  if (pollInterval) clearInterval(pollInterval);
+  if (!accessToken) return;
+
+  async function tick() {
+    try {
+      const data = await fetchNowPlaying(accessToken);
+      if (!data || !data.item) {
+        hideMarquee();
+        songMeta.textContent = '';
+        return;
+      }
+      const track = data.item;
+      const artists = track.artists.map(a => a.name).join(', ');
+      const text = `${track.name} — ${artists}`;
+      // If user provided an override ID, prepend/replace
+      const override = (spotifyIdInput.value || '').trim();
+      const showText = override ? `[${override}] — ${text}` : text;
+      showMarquee(showText);
+      songMeta.textContent = showText;
+    } catch (err) {
+      console.warn('Now playing error', err);
+      // if unauthorized, clear local token
+      if (err.message && err.message.includes('401')) {
+        localStorage.removeItem('spotify_auth');
+        accessToken = null;
+        setDisconnectedUI();
+        hideMarquee();
+      }
+    }
+  }
+
+  // immediate tick then interval
+  await tick();
+  pollInterval = setInterval(tick, 2000);
+}
+
+/* -------------------------
+   Event handlers
+   ------------------------- */
+loginBtn.addEventListener('click', () => {
+  authRedirect();
+});
+
+logoutBtn.addEventListener('click', () => {
+  localStorage.removeItem('spotify_auth');
+  localStorage.removeItem('pkce_code_verifier');
+  accessToken = null;
+  setDisconnectedUI();
+  hideMarquee();
+});
+
+applyTokenBtn.addEventListener('click', () => {
+  const t = manualTokenInput.value.trim();
+  if (!t) return alert('Paste an access token into the field first.');
+  const obj = { access_token: t, token_type: 'Bearer', expires_in: 3600 };
+  localStorage.setItem('spotify_auth', JSON.stringify(obj));
+  accessToken = t;
+  setConnectedUI();
+  startPolling();
+});
+
+clearTokenBtn.addEventListener('click', () => {
+  manualTokenInput.value = '';
+  localStorage.removeItem('spotify_auth');
+  accessToken = null;
+  setDisconnectedUI();
+  hideMarquee();
+});
+
+/* -------------------------
+   On load: handle redirect or existing token
+   ------------------------- */
+(async function init() {
+  // If we were redirected back with ?code=... then exchange it
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+  const error = urlParams.get('error');
+
+  if (error) {
+    // show error (e.g. unsupported_response_type or invalid_client)
+    statusText.textContent = 'Error: ' + error;
+    // remove params from URL for cleanliness
+    history.replaceState({}, document.title, redirectUri);
+    return;
+  }
+
+  if (code) {
+    try {
+      statusText.textContent = 'Exchanging code...';
+      const tokenData = await exchangeCodeForToken(code);
+      accessToken = tokenData.access_token;
+      setConnectedUI();
+      // Clean URL: remove code from URL to avoid re-exchange
+      history.replaceState({}, document.title, redirectUri);
+      await startPolling();
+      return;
+    } catch (err) {
+      statusText.textContent = 'Token exchange failed';
+      console.error(err);
+      alert('Token exchange failed: ' + err.message + '\nIf you see a CORS error you may need a server-side exchange.');
+      history.replaceState({}, document.title, redirectUri);
+    }
+  }
+
+  // If already stored token—use it
+  if (applyStoredAuth()) {
+    setConnectedUI();
+    startPolling();
+  } else {
+    setDisconnectedUI();
+  }
+})();
+</script>
+
 </body>
 </html>
