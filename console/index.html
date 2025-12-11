@@ -1,132 +1,371 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Overlay Console</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
+<meta charset="utf-8" />
+<title>Nebulas Overlay — Console</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
-    body {
-        background: #0a0a0a;
-        font-family: Arial, sans-serif;
-        color: white;
-        padding: 20px;
-    }
+  :root{
+    --bg:#0f1113;
+    --panel:#121316;
+    --muted:#9aa4b2;
+    --accent:#1db954;
+    --card-border: rgba(255,255,255,0.04);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:Inter, "Segoe UI", Arial, sans-serif;
+    background:linear-gradient(180deg,#0b0c0d 0%, #0f1113 100%);
+    color:#e6eef6;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{
+    padding:18px 28px;
+    display:flex; align-items:center; gap:14px;
+    border-bottom:1px solid var(--card-border);
+    background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent);
+  }
+  header h1{margin:0;font-size:18px; font-weight:600}
+  .container{display:flex; gap:20px; padding:22px; align-items:flex-start}
+  nav{width:220px; background:var(--panel); border-radius:8px; padding:12px; border:1px solid var(--card-border)}
+  nav .area-btn{
+    display:block; width:100%; text-align:left; padding:10px 12px; margin-bottom:8px;
+    background:transparent; color:var(--muted); border:1px solid transparent; border-radius:6px; cursor:pointer;
+  }
+  nav .area-btn.active{ color:#fff; background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent); border-color:rgba(255,255,255,0.02) }
+  main { flex:1; min-width:600px; }
+  .panel{
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+    border-radius:10px; padding:18px; margin-bottom:18px; border:1px solid var(--card-border);
+  }
+  .panel h2{margin:0 0 10px 0; font-size:16px}
+  .row{display:flex; gap:12px; align-items:center}
+  label{font-size:13px; color:var(--muted)}
+  input[type="text"], select {
+    width:100%; padding:9px 10px; border-radius:8px; background:#0b0d0f; color:#eaf0f8; border:1px solid rgba(255,255,255,0.03)
+  }
+  button { padding:10px 12px; border-radius:8px; border:0; cursor:pointer; background:var(--accent); color:#fff; font-weight:600 }
+  .muted { color:var(--muted); font-size:13px }
+  .small { font-size:13px; padding:8px 10px; border-radius:8px }
+  .hidden { display:none !important; }
+  .spotify-info { display:flex; gap:12px; align-items:center }
+  .spotify-avatar { width:44px; height:44px; border-radius:8px; background:#222; overflow:hidden; display:flex; align-items:center; justify-content:center }
+  .spotify-name { font-weight:600 }
+  .footer-note { color:var(--muted); font-size:12px; margin-top:8px }
 
-    h1 { margin-bottom: 20px; }
-
-    .card {
-        background: #111;
-        padding: 20px;
-        border-radius: 12px;
-        width: 420px;
-        margin-bottom: 20px;
-        border: 1px solid #222;
-    }
-
-    label {
-        display: block;
-        margin-top: 12px;
-        margin-bottom: 6px;
-        font-size: 14px;
-    }
-
-    input {
-        width: 100%;
-        padding: 10px;
-        background: #222;
-        border: 1px solid #444;
-        border-radius: 6px;
-        color: white;
-        font-size: 16px;
-    }
-
-    button {
-        margin-top: 16px;
-        width: 100%;
-        padding: 12px;
-        background: #4a4aef;
-        border: none;
-        border-radius: 8px;
-        color: white;
-        cursor: pointer;
-        font-size: 16px;
-    }
-
-    button:hover {
-        background: #6363ff;
-    }
+  /* quick responsive */
+  @media (max-width:900px){ .container{flex-direction:column} nav{width:100%} main{min-width:unset} }
 </style>
-
 </head>
 <body>
 
-<h1>Overlay Console</h1>
+<header>
+  <h1>Nebulas Overlay — Console</h1>
+  <div style="margin-left:auto" class="muted">Signed in: <span id="console-user">guest</span></div>
+</header>
 
-<div class="card">
-    <h2>Intermission — TRI Codes</h2>
+<div class="container">
+  <nav>
+    <button class="area-btn active" data-area="intermission">Intermission</button>
+    <button class="area-btn" data-area="lower-thirds">Lower Thirds</button>
+    <button class="area-btn" data-area="sponsor">Sponsor</button>
+    <button class="area-btn" data-area="timer">Timer</button>
+    <button class="area-btn" data-area="match-card">Match Card</button>
+    <button class="area-btn" data-area="settings">Settings</button>
+  </nav>
 
-    <label>Top TRI Code</label>
-    <input id="topTri" maxlength="4" minlength="2" placeholder="e.g. SEN">
+  <main>
+    <!-- INTERMISSION PANEL (primary things working) -->
+    <section id="panel-intermission" class="panel">
+      <h2>Intermission — Live Controls</h2>
 
-    <label>Bottom TRI Code</label>
-    <input id="bottomTri" maxlength="4" minlength="2" placeholder="e.g. NRG">
+      <!-- SPOTIFY -->
+      <div style="margin-bottom:12px">
+        <label>Spotify — Connect to fetch Now Playing</label>
+        <div style="height:10px"></div>
+        <div class="row">
+          <button id="spotify-connect" class="small">Connect Spotify</button>
+          <button id="spotify-disconnect" class="small" style="background:#c43; display:none">Disconnect</button>
+          <div style="flex:1"></div>
+        </div>
 
-    <button onclick="saveTriCodes()">Save TRI Codes</button>
+        <div id="spotify-status" style="margin-top:12px" class="muted">Not connected</div>
+
+        <div id="spotify-user" class="spotify-info hidden" style="margin-top:12px">
+          <div class="spotify-avatar" id="spotify-avatar"></div>
+          <div>
+            <div id="spotify-display" class="spotify-name">—</div>
+            <div class="muted" id="spotify-username">@username</div>
+          </div>
+        </div>
+        <div class="footer-note">Spotify auth uses PKCE + a server-side token exchange. You must deploy the exchange endpoint (instructions below).</div>
+      </div>
+
+      <hr style="border:none; height:1px; background:var(--card-border); margin:14px 0" />
+
+      <!-- TRI CODES -->
+      <div>
+        <label>Team TRI Codes (top & bottom)</label>
+        <div style="height:10px"></div>
+        <div class="row" style="gap:10px">
+          <input id="tri-top" type="text" placeholder="[TLV]" />
+          <input id="tri-bottom" type="text" placeholder="[SRG]" />
+          <button id="apply-tri">Apply to Intermission</button>
+        </div>
+        <div class="footer-note">Values are saved to the shared intermission record — overlays read them live.</div>
+      </div>
+    </section>
+
+    <!-- placeholder panels -->
+    <section id="panel-lower-thirds" class="panel hidden"><h2>Lower Thirds</h2><p class="muted">Controls coming soon.</p></section>
+    <section id="panel-sponsor" class="panel hidden"><h2>Sponsor</h2><p class="muted">Controls coming soon.</p></section>
+    <section id="panel-timer" class="panel hidden"><h2>Timer</h2><p class="muted">Controls coming soon.</p></section>
+    <section id="panel-match-card" class="panel hidden"><h2>Match Card</h2><p class="muted">Controls coming soon.</p></section>
+
+    <!-- settings: firebase + exchange endpoint -->
+    <section id="panel-settings" class="panel hidden">
+      <h2>Settings — Setup</h2>
+      <p class="muted">You must supply both Firebase config (Realtime DB) and a token exchange endpoint (server) for Spotify PKCE.</p>
+
+      <label>Firebase Realtime Database URL</label>
+      <input id="fb-db-url" type="text" placeholder="https://PROJECT_ID-default-rtdb.firebaseio.com/" />
+
+      <label>Firebase API Key (Web)</label>
+      <input id="fb-api-key" type="text" placeholder="(from Firebase Console)" />
+
+      <label>Exchange endpoint (server) URL</label>
+      <input id="exchange-endpoint" type="text" placeholder="https://your-func.example.com/exchange" />
+      <div style="height:10px"></div>
+      <button id="save-settings">Save Settings</button>
+
+      <div class="footer-note" style="margin-top:12px">
+        <strong>Save these to localStorage</strong> — console and overlay will read them. See the setup instructions after this file for step-by-step deploy.
+      </div>
+    </section>
+
+  </main>
 </div>
 
 <script>
-/* ----------------------------
-   Firebase Init
------------------------------ */
-const firebaseConfig = {
-    apiKey: "AIzaSyCZaiLNBoOtcPPaCupRXAttm0KlV8xuMUw",
-    authDomain: "nebulas-overlay.firebaseapp.com",
-    databaseURL: "https://nebulas-overlay-default-rtdb.firebaseio.com",
-    projectId: "nebulas-overlay",
-    storageBucket: "nebulas-overlay.firebasestorage.app",
-    messagingSenderId: "369414654740",
-    appId: "1:369414654740:web:808bff413fd75084b15001"
-};
+/* ==========================
+   CONFIG (save via Settings)
+   ==========================
+   - You must configure two things:
+     1) Firebase Realtime Database URL (example: https://project-id-default-rtdb.firebaseio.com)
+     2) Exchange endpoint URL (server-side function that exchanges code=>tokens)
+*/
+const LS_FB_DB = 'neb_overlay_fb_db';
+const LS_EXCHANGE = 'neb_overlay_exchange';
+const LS_REDIRECT = 'neb_overlay_redirect';
+const REDIRECT_URI_DEFAULT = location.origin + location.pathname; // keep same path
+/* ========================================================= */
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+function byid(id){ return document.getElementById(id); }
 
-/* ----------------------------
-   Save TRI Codes
------------------------------ */
-function formatTri(value) {
-    if (!value) return "";
-    value = value.trim().toUpperCase();
-    if (value.length < 2 || value.length > 4) return null;
-    return `[${value}]`;
+/* --- area nav handling --- */
+document.querySelectorAll('.area-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.area-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const area = btn.dataset.area;
+    document.querySelectorAll('section.panel').forEach(sec=>sec.classList.add('hidden'));
+    const target = document.querySelector('#panel-' + area);
+    if(target) target.classList.remove('hidden');
+  });
+});
+
+/* load saved settings if any */
+byid('fb-db-url').value = localStorage.getItem(LS_FB_DB) || '';
+byid('exchange-endpoint').value = localStorage.getItem(LS_EXCHANGE) || '';
+byid('spotify-status').textContent = 'Redirect URI: ' + REDIRECT_URI_DEFAULT;
+
+/* Save settings */
+byid('save-settings').addEventListener('click', ()=>{
+  const db = byid('fb-db-url').value.trim();
+  const ex = byid('exchange-endpoint').value.trim();
+  if(!db || !ex){ alert('Enter both Firebase DB URL and Exchange endpoint'); return; }
+  localStorage.setItem(LS_FB_DB, db);
+  localStorage.setItem(LS_EXCHANGE, ex);
+  alert('Saved. Console will use these settings locally.');
+});
+
+/* ------------------------
+   Firebase (light client)
+   ------------------------ */
+/* We'll write team tags to path: /intermission/tags { top: "...", bottom: "..." } */
+async function writeIntermissionTags(top, bottom){
+  const dbUrl = localStorage.getItem(LS_FB_DB);
+  if(!dbUrl){ alert('Set Firebase DB URL in Settings first'); return; }
+  // simple unauthenticated write (configure DB rules to allow writes from your console origin or set up auth)
+  const url = dbUrl.replace(/\/$/,'') + '/intermission/tags.json';
+  await fetch(url, {
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ top, bottom, updated_at: Date.now() })
+  });
+  alert('Tags written to intermission/tags in Firebase DB.');
 }
 
-async function saveTriCodes() {
-    let top = document.getElementById("topTri").value;
-    let bottom = document.getElementById("bottomTri").value;
+/* Apply TRI codes */
+byid('apply-tri').addEventListener('click', ()=> {
+  const top = byid('tri-top').value.trim() || '[TLV]';
+  const bottom = byid('tri-bottom').value.trim() || '[SRG]';
+  writeIntermissionTags(top, bottom).catch(err=>{
+    console.error(err);
+    alert('Error writing tags. See console.');
+  });
+});
 
-    const topFormatted = formatTri(top);
-    const bottomFormatted = formatTri(bottom);
+/* ------------------------
+   Spotify PKCE (frontend)
+   ------------------------ */
+/* NOTE:
+   - You MUST deploy a server endpoint (exchange endpoint) that accepts POST { code, code_verifier, redirect_uri }
+     and returns JSON { access_token, refresh_token, expires_in, display_name, user_id, avatar_url? }
+   - The server uses your Spotify CLIENT_SECRET (never put secret in frontend).
+   - Save the exchange endpoint URL in Settings and press "Connect Spotify".
+*/
 
-    if (!topFormatted || !bottomFormatted) {
-        alert("Each TRI code must be between 2 and 4 characters.");
-        return;
+function randomString(len){
+  const arr = new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => ('0'+b.toString(16)).slice(-2)).join('');
+}
+async function sha256(buffer){
+  const b = new TextEncoder().encode(buffer);
+  const digest = await crypto.subtle.digest('SHA-256', b);
+  return new Uint8Array(digest);
+}
+function base64URLEncode(arr){
+  let str = btoa(String.fromCharCode.apply(null, arr));
+  return str.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function makeCodeChallenge(verifier){
+  const hashed = await sha256(verifier);
+  return base64URLEncode(hashed);
+}
+
+const CLIENT_ID = '36304abf3c674b89ba2489ab3e554e0b'; // your client id (ok to be public)
+const REDIRECT_URI = REDIRECT_URI_DEFAULT;
+const SCOPES = 'user-read-playback-state user-read-currently-playing user-read-private';
+
+byid('spotify-connect').addEventListener('click', async ()=>{
+  // generate verifier and challenge
+  const verifier = randomString(64);
+  const challenge = await makeCodeChallenge(verifier);
+  localStorage.setItem('pkce_verifier', verifier);
+  // save redirect (so we can detect it)
+  localStorage.setItem(LS_REDIRECT, REDIRECT_URI);
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    redirect_uri: REDIRECT_URI,
+    code_challenge_method: 'S256',
+    code_challenge: challenge,
+  });
+  // redirect to Spotify authorization
+  window.location = 'https://accounts.spotify.com/authorize?' + params.toString();
+});
+
+/* handle redirect back to console with ?code=... */
+async function handleSpotifyRedirect(){
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  const error = params.get('error');
+  if(error){
+    byid('spotify-status').textContent = 'Spotify auth error: ' + error;
+    // drop parameters
+    history.replaceState({}, '', REDIRECT_URI);
+    return;
+  }
+  if(!code) return;
+
+  const verifier = localStorage.getItem('pkce_verifier');
+  if(!verifier){ byid('spotify-status').textContent = 'Missing code_verifier (start auth again)'; history.replaceState({}, '', REDIRECT_URI); return; }
+
+  const EXCHANGE = localStorage.getItem(LS_EXCHANGE);
+  if(!EXCHANGE){
+    alert('Set "Exchange endpoint" in Settings before completing sign-in.');
+    history.replaceState({}, '', REDIRECT_URI);
+    return;
+  }
+
+  // POST to exchange endpoint (server must call Spotify /api/token with client_secret)
+  byid('spotify-status').textContent = 'Exchanging code for token...';
+  try{
+    const resp = await fetch(EXCHANGE, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ code, code_verifier: verifier, redirect_uri: REDIRECT_URI })
+    });
+    const json = await resp.json();
+    if(!resp.ok){
+      console.error('Exchange error', json);
+      byid('spotify-status').textContent = 'Token exchange failed (see console)';
+      history.replaceState({}, '', REDIRECT_URI);
+      return;
     }
 
-    await db.collection("intermission").doc("tags").set({
-        top: topFormatted,
-        bottom: bottomFormatted,
-        updated_at: Date.now()
-    });
+    // server should return at least: access_token, refresh_token (optional), expires_in, display_name, user_id, avatar_url
+    localStorage.setItem('spotify_access_token', json.access_token);
+    localStorage.setItem('spotify_refresh_token', json.refresh_token || '');
+    localStorage.setItem('spotify_token_expires_at', (Date.now() + (json.expires_in*1000)).toString());
+    localStorage.setItem('spotify_user_display', json.display_name || json.user_id || 'Spotify User');
 
-    alert("Saved!");
+    // update UI
+    byid('spotify-status').textContent = 'Connected as ' + (json.display_name || json.user_id);
+    byid('spotify-display').textContent = (json.display_name || json.user_id);
+    if(json.avatar_url) byid('spotify-avatar').style.backgroundImage = `url(${json.avatar_url})`;
+    byid('spotify-user').classList.remove('hidden');
+    byid('spotify-connect').style.display = 'none';
+    byid('spotify-disconnect').style.display = '';
+
+    // cleanup url
+    history.replaceState({}, '', REDIRECT_URI);
+
+  }catch(err){
+    console.error(err);
+    byid('spotify-status').textContent = 'Exchange error (see console)';
+    history.replaceState({}, '', REDIRECT_URI);
+  }
 }
-</script>
 
+/* Disconnect */
+byid('spotify-disconnect').addEventListener('click', ()=>{
+  localStorage.removeItem('spotify_access_token');
+  localStorage.removeItem('spotify_refresh_token');
+  localStorage.removeItem('spotify_token_expires_at');
+  localStorage.removeItem('spotify_user_display');
+  byid('spotify-user').classList.add('hidden');
+  byid('spotify-connect').style.display = '';
+  byid('spotify-disconnect').style.display = 'none';
+  byid('spotify-status').textContent = 'Not connected';
+});
+
+/* On load: reflect saved user */
+(function init(){
+  const display = localStorage.getItem('spotify_user_display');
+  if(display){
+    byid('spotify-display').textContent = display;
+    byid('spotify-user').classList.remove('hidden');
+    byid('spotify-connect').style.display = 'none';
+    byid('spotify-disconnect').style.display = '';
+    byid('spotify-status').textContent = 'Connected as ' + display;
+  }
+  // if redirected back with ?code=...
+  handleSpotifyRedirect();
+})();
+
+/* Expose small helper for overlay to read config (optional) */
+window.ConsoleConfig = {
+  getFirebaseDB: ()=> localStorage.getItem(LS_FB_DB) || '',
+  getExchangeEndpoint: ()=> localStorage.getItem(LS_EXCHANGE) || '',
+  getSpotifyToken: ()=> localStorage.getItem('spotify_access_token') || ''
+};
+
+</script>
 </body>
 </html>
