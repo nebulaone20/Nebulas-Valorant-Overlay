@@ -1,127 +1,52 @@
-// ===============================
-// CONFIG
-// ===============================
-const clientId = "36304abf3c674b89ba2489ab3e554e0b";
-const redirectUri = "https://nebulaone20.github.io/Nebulas-Valorant-Overlay/console/";
-const scopes = "user-read-currently-playing user-read-playback-state";
+const CLIENT_ID = "36304abf3c674b89ba2489ab3e554e0b";
+const REDIRECT_URI = "https://nebulaone20.github.io/Nebulas-Valorant-Overlay/console/";
+const SCOPES = "user-read-playback-state user-read-currently-playing";
 
-// ===============================
-// HELPER: Generate PKCE code verifier
-// ===============================
-function generateCodeVerifier(length) {
-    let text = "";
-    let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
-    for (let i = 0; i < length; i++) text += possible.charAt(Math.floor(Math.random() * possible.length));
-    return text;
-}
-
-// ===============================
-// HELPER: SHA256 encoder
-// ===============================
-async function sha256(plain) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(plain);
-    return window.crypto.subtle.digest("SHA-256", data);
-}
-
-// ===============================
-// HELPER: Convert buffer to base64url
-// ===============================
-function base64urlencode(buffer) {
-    let binary = "";
-    const bytes = new Uint8Array(buffer);
-    bytes.forEach((b) => (binary += String.fromCharCode(b)));
-    return btoa(binary)
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "");
-}
-
-// ===============================
-// STEP 1: Redirect to Spotify
-// ===============================
-document.getElementById("login-btn").onclick = async () => {
-    const codeVerifier = generateCodeVerifier(128);
-    localStorage.setItem("code_verifier", codeVerifier);
-
-    const codeChallenge = base64urlencode(await sha256(codeVerifier));
-
+document.getElementById("login-btn").onclick = () => {
     const authUrl =
-        "https://accounts.spotify.com/authorize?" +
-        new URLSearchParams({
-            response_type: "code",
-            client_id: clientId,
-            scope: scopes,
-            code_challenge_method: "S256",
-            code_challenge: codeChallenge,
-            redirect_uri: redirectUri
-        });
+      "https://accounts.spotify.com/authorize" +
+      "?response_type=token" +
+      "&client_id=" + CLIENT_ID +
+      "&redirect_uri=" + encodeURIComponent(REDIRECT_URI) +
+      "&scope=" + encodeURIComponent(SCOPES);
 
     window.location.href = authUrl;
 };
 
-// ===============================
-// STEP 2: Handle returned authorization code
-// ===============================
-async function checkForAuthCode() {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-
-    if (!code) return; // No code → do nothing
-
-    const codeVerifier = localStorage.getItem("code_verifier");
-
-    // Exchange code for token
-    const body = new URLSearchParams({
-        grant_type: "authorization_code",
-        code: code,
-        redirect_uri: redirectUri,
-        client_id: clientId,
-        code_verifier: codeVerifier
-    });
-
-    const response = await fetch("https://accounts.spotify.com/api/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body
-    });
-
-    const data = await response.json();
-
-    if (data.error) {
-        alert("Token exchange failed: " + JSON.stringify(data));
-        return;
-    }
-
-    localStorage.setItem("access_token", data.access_token);
-
-    startNowPlaying();
+function getTokenFromUrl() {
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    return params.get("access_token");
 }
 
-checkForAuthCode();
+const token = getTokenFromUrl();
+if (token) {
+    localStorage.setItem("spotify_access_token", token);
+    window.location.hash = ""; // clean URL
+}
 
-// ===============================
-// STEP 3: Request currently playing track
-// ===============================
-async function startNowPlaying() {
-    document.getElementById("song-box").style.display = "block";
+const savedToken = localStorage.getItem("spotify_access_token");
+if (savedToken) {
+    startNowPlaying(savedToken);
+}
+
+async function startNowPlaying(token) {
+    document.getElementById("login-btn").style.display = "none";
+    document.getElementById("current-track").classList.remove("hidden");
 
     setInterval(async () => {
-        const token = localStorage.getItem("access_token");
-        if (!token) return;
-
-        const response = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
+        const r = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
             headers: { Authorization: "Bearer " + token }
         });
 
-        if (!response.ok) return;
+        if (!r.ok) return;
+        const json = await r.json();
+        const track = json?.item;
 
-        const data = await response.json();
-        if (!data || !data.item) return;
-
-        const track = data.item;
-        const text = `${track.name} — ${track.artists[0].name}`;
-
-        document.getElementById("scroll-text").textContent = text;
+        if (track) {
+            const text = `${track.name} — ${track.artists[0].name}`;
+            document.getElementById("track-text").textContent = text;
+            localStorage.setItem("now_playing_text", text);
+        }
     }, 2000);
 }
