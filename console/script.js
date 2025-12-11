@@ -1,4 +1,4 @@
-const clientId = "YOUR_CLIENT_ID_HERE";
+const clientId = "36304abf3c674b89ba2489ab3e554e0b";
 const redirectUri = "https://nebulaone20.github.io/Nebulas-Valorant-Overlay/console/";
 const scopes = "user-read-playback-state user-read-currently-playing";
 
