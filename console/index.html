@@ -46,7 +46,7 @@
     border-radius: 4px;
     cursor: pointer;
   }
-  .panel input, .panel select {
+  .panel input {
     width: 100%;
     padding: 8px;
     margin: 8px 0 12px;
@@ -54,11 +54,6 @@
     border: 1px solid #444;
     color: #eee;
     border-radius: 4px;
-  }
-  .panel label {
-    display: block;
-    margin-top: 12px;
-    font-size: 14px;
   }
   footer {
     text-align: center;
@@ -73,57 +68,174 @@
 <header>Overlay Control Console</header>
 
 <main>
+
+  <!-- SPOTIFY PANEL -->
   <div class="panel" id="spotify-panel">
     <h2>Spotify / Now Playing</h2>
     <button id="login-btn">Connect Spotify</button>
+
     <div id="user-info" style="display:none; margin-top:10px;">
       <p id="user-name">–</p>
       <p id="track-info">Not playing</p>
     </div>
   </div>
 
+  <!-- OTHER PANELS -->
   <div class="panel" id="overlay-settings">
     <h2>Overlay Settings</h2>
-    <label for="bg-video-url">Background video URL</label>
-    <input type="text" id="bg-video-url" placeholder="e.g. https://.../BGLoop.webm" />
+
+    <label>Background video URL</label>
+    <input id="bg-video-url" placeholder="https://.../video.webm">
+
     <button id="update-bg">Update Background</button>
 
-    <label for="team1-tag">Team 1 Tag</label>
-    <input type="text" id="team1-tag" placeholder="[TLV]" />
-    <label for="team2-tag">Team 2 Tag</label>
-    <input type="text" id="team2-tag" placeholder="[SRG]" />
+    <label>Team 1 Tag</label>
+    <input id="team1-tag" placeholder="[TLV]">
+
+    <label>Team 2 Tag</label>
+    <input id="team2-tag" placeholder="[SRG]">
+
     <button id="update-tags">Update Tags</button>
   </div>
 
-  <div class="panel" id="other-panel">
-    <h2>Other Controls</h2>
-    <!-- Put more settings/inputs/buttons here -->
-    <p>–</p>
-  </div>
 </main>
 
 <footer>© Nebulas Overlay Console</footer>
 
+
 <script>
-// Example: Spotify login logic (you can paste your PKCE code here)
+/* -----------------------------------------------------
+   SPOTIFY PKCE CONFIG
+----------------------------------------------------- */
+const CLIENT_ID = "36304abf3c674b89ba2489ab3e554e0b";
+const REDIRECT_URI = "https://nebulaone20.github.io/Nebulas-Valorant-Overlay/console/";
+const SCOPE = "user-read-playback-state user-read-currently-playing";
 
-document.getElementById('login-btn').onclick = () => {
-  // your auth logic or redirect to auth flow
-  console.log('Login click — start Spotify auth flow');
+/* -----------------------------------------------------
+   PKCE HELPERS
+----------------------------------------------------- */
+function base64urlencode(str) {
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(str)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function sha256(str) {
+  const data = new TextEncoder().encode(str);
+  return await crypto.subtle.digest("SHA-256", data);
+}
+
+function generateRandomString(length = 64) {
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  return Array.from(array, dec => ('0' + dec.toString(16)).slice(-2)).join('');
+}
+
+/* -----------------------------------------------------
+   START AUTH
+----------------------------------------------------- */
+document.getElementById("login-btn").onclick = async () => {
+
+  const verifier = generateRandomString(64);
+  localStorage.setItem("spotify_verifier", verifier);
+
+  const challenge = base64urlencode(await sha256(verifier));
+
+  const params = new URLSearchParams({
+    response_type: "code",
+    client_id: CLIENT_ID,
+    scope: SCOPE,
+    code_challenge_method: "S256",
+    code_challenge: challenge,
+    redirect_uri: REDIRECT_URI
+  });
+
+  window.location = "https://accounts.spotify.com/authorize?" + params.toString();
 };
 
-// Example: Update background video URL
-document.getElementById('update-bg').onclick = () => {
-  const url = document.getElementById('bg-video-url').value;
-  // send this to overlay or store it so overlay picks it up
-  alert('You set background video to: ' + url);
+/* -----------------------------------------------------
+   HANDLE REDIRECT
+----------------------------------------------------- */
+async function handleRedirect() {
+
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  if (!code) return;
+
+  const verifier = localStorage.getItem("spotify_verifier");
+
+  const body = new URLSearchParams({
+    client_id: CLIENT_ID,
+    grant_type: "authorization_code",
+    code: code,
+    redirect_uri: REDIRECT_URI,
+    code_verifier: verifier
+  });
+
+  const res = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body
+  });
+
+  const json = await res.json();
+
+  if (json.access_token) {
+    localStorage.setItem("spotify_access_token", json.access_token);
+    window.history.replaceState({}, document.title, REDIRECT_URI);
+    startNowPlaying(json.access_token);
+  }
+}
+
+handleRedirect();
+
+/* -----------------------------------------------------
+   NOW PLAYING POLLER
+----------------------------------------------------- */
+async function startNowPlaying(token) {
+
+  document.getElementById("login-btn").style.display = "none";
+
+  async function update() {
+    const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    if (res.status === 204) {
+      document.getElementById("track-info").textContent = "Not playing";
+      return;
+    }
+
+    const data = await res.json();
+    if (!data.item) return;
+
+    document.getElementById("user-info").style.display = "block";
+    document.getElementById("track-info").textContent =
+      data.item.name + " — " + data.item.artists[0].name;
+
+    localStorage.setItem("now_playing_text",
+      data.item.name + " — " + data.item.artists[0].name
+    );
+  }
+
+  update();
+  setInterval(update, 2000);
+}
+
+/* If token already exists */
+const saved = localStorage.getItem("spotify_access_token");
+if (saved) startNowPlaying(saved);
+
+/* -----------------------------------------------------
+   EXAMPLE SETTINGS BUTTONS
+----------------------------------------------------- */
+document.getElementById("update-bg").onclick = () => {
+  const url = document.getElementById("bg-video-url").value;
+  localStorage.setItem("overlay_bg", url);
 };
 
-// Example: Update team tags
-document.getElementById('update-tags').onclick = () => {
-  const t1 = document.getElementById('team1-tag').value;
-  const t2 = document.getElementById('team2-tag').value;
-  alert('Team tags updated: ' + t1 + ' vs ' + t2);
+document.getElementById("update-tags").onclick = () => {
+  localStorage.setItem("overlay_team1", document.getElementById("team1-tag").value);
+  localStorage.setItem("overlay_team2", document.getElementById("team2-tag").value);
 };
 
 </script>
