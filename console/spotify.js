@@ -1,35 +1,44 @@
+// -----------------------------
+// CONFIG
+// -----------------------------
 const clientId = "36304abf3c674b89ba2489ab3e554e0b";
 const redirectUri = "https://nebulaone20.github.io/Nebulas-Valorant-Overlay/console/";
 const scopes = "user-read-playback-state user-read-currently-playing";
 
-// LOGIN BUTTON CLICK
+// -----------------------------
+// LOGIN BUTTON
+// -----------------------------
 document.getElementById("login-btn").onclick = () => {
+
     const authUrl =
         "https://accounts.spotify.com/authorize" +
-        "?response_type=token" +
+        "?response_type=token" +                                // IMPORTANT
         "&client_id=" + encodeURIComponent(clientId) +
-        "&scope=" + encodeURIComponent(scopes) +
-        "&redirect_uri=" + encodeURIComponent(redirectUri);
+        "&redirect_uri=" + encodeURIComponent(redirectUri) +
+        "&scope=" + encodeURIComponent(scopes);
 
     window.location.href = authUrl;
 };
 
-// GET ACCESS TOKEN FROM URL FRAGMENT
+// -----------------------------
+// GET ACCESS TOKEN FROM URL
+// -----------------------------
 function getAccessTokenFromUrl() {
-    const hash = window.location.hash.substring(1); 
+    const hash = window.location.hash.substring(1);
     const params = new URLSearchParams(hash);
     return params.get("access_token");
 }
 
 const token = getAccessTokenFromUrl();
 
-// IF LOGGED IN
 if (token) {
     document.getElementById("login-btn").style.display = "none";
     startNowPlaying();
 }
 
-// POLL CURRENT SONG
+// -----------------------------
+// FETCH CURRENT SONG
+// -----------------------------
 async function startNowPlaying() {
     setInterval(async () => {
         const response = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
