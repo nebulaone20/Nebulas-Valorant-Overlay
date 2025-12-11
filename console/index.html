@@ -2,18 +2,20 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Intermission Control Panel</title>
-    <script defer src="spotify.js"></script>
+    <title>Nebulas Spotify Panel</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-    <h1>Intermission Control Panel</h1>
 
-    <button id="login-btn">Connect Spotify</button>
+<h1>Nebulas Spotify Control Panel</h1>
 
-    <div id="song-marquee" class="hidden">
-        <p id="scroll-text"></p>
-    </div>
+<button id="login-btn">Login with Spotify</button>
 
+<div id="song-box" style="display:none;">
+    <p>Now Playing:</p>
+    <div id="scroll-text"></div>
+</div>
+
+<script src="spotify.js"></script>
 </body>
 </html>
