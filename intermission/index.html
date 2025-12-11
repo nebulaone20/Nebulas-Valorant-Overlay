@@ -30,7 +30,7 @@
         pointer-events: none;
     }
 
-    /* Optional dark overlay for contrast */
+    /* ───────── BG BEHIND VIDEO ───────── */
     body::before {
         content: "";
         position: absolute;
@@ -43,7 +43,7 @@
     /* ───────── COMMON BOX STYLE ───────── */
     .box {
         position: absolute;
-        background: rgba(0, 0, 0, 0.6);
+        background: rgba(22, 22, 22, 0.53);
     }
 
     /* ───────── Sponsor ───────── */
@@ -54,7 +54,7 @@
         height: 130px;
     }
 
-    /* ───────── Big Ad / Map Video ───────── */
+    /* ───────── Main Ad / Map Video ───────── */
     #main-box {
         top: 190px;
         left: 40px;
@@ -69,14 +69,16 @@
     #timer-box {
         top: 40px;
         right: 40px;
-        width: 360px;
+        width: 570px;
         height: 110px;
+        background: #000000;
+        opacity: 90%;
         clip-path: polygon(
             0 0,
             100% 0,
             100% 100%,
-            10% 100%,
-            0 72%
+            8% 100%,
+            0 73%
         );
     }
 
@@ -95,29 +97,84 @@
         );
     }
 
+    #match-box-bar-left {
+        background: #01091D;
+        height: 5px;
+        width: 90px;
+        left: 35px;
+        top: 430px;
+    }
+
+    #match-box-bar-right {
+        background: #01091D;
+        height: 5px;
+        width: 90px;
+        left: 445px;
+        top: 430px;
+    }
+
+    #match-box-vs-text {
+        position: absolute;
+        top: 418px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        font-size: 20px;
+        font-weight: bold;
+        letter-spacing: 3px;
+        pointer-events: none;
+    }
+
+    /* ───────── TRI Codes ───────── */
+    #team-top-tag, #team-bottom-tag {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        font-size: 18px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        pointer-events: none;
+    }
+
+    #team-top-tag {
+        top: 388px;
+    }
+
+    #team-bottom-tag {
+        top: 458px;
+    }
+
     /* ───────── Music Bar ───────── */
     #music-box {
         bottom: 50px;
         left: 60px;
         width: 600px;
         height: 30px;
-        background: rgba(0, 0, 0, 1);
+        background: #161616;
     }
 </style>
 </head>
 
 <body>
 
-    <!-- BACKGROUND VIDEO -->
     <video id="bg-video" autoplay muted loop playsinline>
         <source src="BGLoop.webm" type="video/webm">
     </video>
 
-    <!-- UI LAYOUT -->
     <div id="sponsor-box" class="box"></div>
     <div id="main-box" class="box"></div>
     <div id="timer-box" class="box"></div>
-    <div id="match-box" class="box"></div>
+
+    <div id="match-box" class="box">
+        <div id="match-box-bar-left" class="box"></div>
+        <div id="match-box-bar-right" class="box"></div>
+        <div id="match-box-vs-text">VS</div>
+
+        <div id="team-top-tag">[TLV]</div>
+        <div id="team-bottom-tag">[SRG]</div>
+    </div>
+
     <div id="music-box" class="box"></div>
 
 </body>
