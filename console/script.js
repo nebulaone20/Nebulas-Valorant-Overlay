@@ -37,6 +37,8 @@ async function startNowPlaying() {
         const data = await response.json();
         const track = data.item;
 
+        if (!track) return;
+
         const text = `${track.name} — ${track.artists[0].name}`;
 
         document.getElementById("scroll-text").textContent = text;
@@ -44,4 +46,3 @@ async function startNowPlaying() {
 
     }, 2000);
 }
-
