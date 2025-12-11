@@ -2,181 +2,131 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Spotify PKCE Example</title>
+<title>Console</title>
 <style>
-  body { font-family: Arial, sans-serif; padding: 20px; background:#111; color:#eee; }
-  #login-btn { padding:10px 16px; background:#1db954; color:#fff; border:none; cursor:pointer; border-radius:6px; }
-  #song-marquee { margin-top:20px; display:none; }
-  #scroll-text { white-space:nowrap; }
+  body {
+    margin: 0;
+    padding: 0;
+    background: #111;
+    color: #eee;
+    font-family: Arial, sans-serif;
+  }
+  header {
+    background: #1a1a1a;
+    padding: 20px;
+    text-align: center;
+    font-size: 24px;
+    border-bottom: 2px solid #333;
+  }
+  main {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 20px;
+    gap: 20px;
+  }
+  .panel {
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 20px;
+    flex: 1 1 300px;
+    min-width: 300px;
+  }
+  .panel h2 {
+    margin-top: 0;
+    font-size: 18px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 8px;
+  }
+  .panel button {
+    padding: 10px 16px;
+    background: #1db954;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .panel input, .panel select {
+    width: 100%;
+    padding: 8px;
+    margin: 8px 0 12px;
+    background: #333;
+    border: 1px solid #444;
+    color: #eee;
+    border-radius: 4px;
+  }
+  .panel label {
+    display: block;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  footer {
+    text-align: center;
+    padding: 10px;
+    color: #777;
+    font-size: 12px;
+  }
 </style>
 </head>
 <body>
 
-<button id="login-btn">Connect Spotify</button>
+<header>Overlay Control Console</header>
 
-<div id="song-marquee">
-  <div id="scroll-text">Not playing</div>
-</div>
+<main>
+  <div class="panel" id="spotify-panel">
+    <h2>Spotify / Now Playing</h2>
+    <button id="login-btn">Connect Spotify</button>
+    <div id="user-info" style="display:none; margin-top:10px;">
+      <p id="user-name">–</p>
+      <p id="track-info">Not playing</p>
+    </div>
+  </div>
+
+  <div class="panel" id="overlay-settings">
+    <h2>Overlay Settings</h2>
+    <label for="bg-video-url">Background video URL</label>
+    <input type="text" id="bg-video-url" placeholder="e.g. https://.../BGLoop.webm" />
+    <button id="update-bg">Update Background</button>
+
+    <label for="team1-tag">Team 1 Tag</label>
+    <input type="text" id="team1-tag" placeholder="[TLV]" />
+    <label for="team2-tag">Team 2 Tag</label>
+    <input type="text" id="team2-tag" placeholder="[SRG]" />
+    <button id="update-tags">Update Tags</button>
+  </div>
+
+  <div class="panel" id="other-panel">
+    <h2>Other Controls</h2>
+    <!-- Put more settings/inputs/buttons here -->
+    <p>–</p>
+  </div>
+</main>
+
+<footer>© Nebulas Overlay Console</footer>
 
 <script>
-/* CONFIG - replace these */
-const CLIENT_ID = '36304abf3c674b89ba2489ab3e554e0b'; // your client id
-const REDIRECT_URI = 'https://nebulaone20.github.io/Nebulas-Valorant-Overlay/console/'; // must match registered redirect
-const SCOPE = 'user-read-playback-state user-read-currently-playing';
-const EXCHANGE_ENDPOINT = 'https://spotifyoverlayverify.shoveltonnoah80.workers.dev/'; //
+// Example: Spotify login logic (you can paste your PKCE code here)
 
-/* PKCE helpers */
-function base64URLEncode(str) {
-  return btoa(String.fromCharCode.apply(null, new Uint8Array(str)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-async function sha256(plain) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(plain);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return new Uint8Array(hash);
-}
-async function generateCodeChallenge(verifier) {
-  const hashed = await sha256(verifier);
-  return base64URLEncode(hashed);
-}
-function randomString(length) {
-  const array = new Uint8Array(length);
-  crypto.getRandomValues(array);
-  return Array.from(array).map(b => ('0' + (b & 0xff).toString(16)).slice(-2)).join('');
-}
-
-/* Start auth flow when clicking login */
-document.getElementById('login-btn').onclick = async () => {
-  // code_verifier: random string (43-128 chars). We'll use 64 chars hex (>=43)
-  const codeVerifier = randomString(64);
-  localStorage.setItem('pkce_code_verifier', codeVerifier);
-
-  const codeChallenge = await generateCodeChallenge(codeVerifier);
-
-  const state = Math.random().toString(36).substring(2, 15);
-  localStorage.setItem('oauth_state', state);
-
-  const authUrl = new URL('https://accounts.spotify.com/authorize');
-  authUrl.searchParams.set('response_type', 'code');
-  authUrl.searchParams.set('client_id', CLIENT_ID);
-  authUrl.searchParams.set('scope', SCOPE);
-  authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
-  authUrl.searchParams.set('state', state);
-  authUrl.searchParams.set('code_challenge_method', 'S256');
-  authUrl.searchParams.set('code_challenge', codeChallenge);
-
-  window.location.href = authUrl.toString();
+document.getElementById('login-btn').onclick = () => {
+  // your auth logic or redirect to auth flow
+  console.log('Login click — start Spotify auth flow');
 };
 
-/* On page load: handle redirect back with ?code= */
-async function handleRedirect() {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  const state = params.get('state');
-  const error = params.get('error');
+// Example: Update background video URL
+document.getElementById('update-bg').onclick = () => {
+  const url = document.getElementById('bg-video-url').value;
+  // send this to overlay or store it so overlay picks it up
+  alert('You set background video to: ' + url);
+};
 
-  if (error) {
-    console.error('Spotify auth error', error);
-    return;
-  }
-  if (!code) return; // nothing to do
-
-  // Validate state
-  const savedState = localStorage.getItem('oauth_state');
-  if (!savedState || savedState !== state) {
-    console.error('Invalid state');
-    return;
-  }
-
-  const code_verifier = localStorage.getItem('pkce_code_verifier');
-  if (!code_verifier) {
-    console.error('Missing code_verifier in localStorage');
-    return;
-  }
-
-  // Send to server for exchange
-  try {
-    const resp = await fetch(EXCHANGE_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code,
-        code_verifier,
-        redirect_uri: REDIRECT_URI
-      })
-    });
-    const json = await resp.json();
-    if (!resp.ok) {
-      console.error('Token exchange failed', json);
-      alert('Token exchange failed. See console.');
-      return;
-    }
-
-    // json should contain access_token, refresh_token, expires_in
-    localStorage.setItem('spotify_access_token', json.access_token);
-    localStorage.setItem('spotify_refresh_token', json.refresh_token || '');
-    localStorage.setItem('spotify_token_expires_at', (Date.now() + (json.expires_in * 1000)).toString());
-
-    // clear code from URL
-    window.history.replaceState({}, document.title, REDIRECT_URI);
-
-    startNowPlaying(json.access_token);
-  } catch (err) {
-    console.error('Exchange error', err);
-    alert('Exchange error, check console.');
-  }
-}
-
-/* Poll currently-playing and set scroll text */
-let nowPlayingInterval = null;
-async function startNowPlaying(token) {
-  document.getElementById('login-btn').style.display = 'none';
-  document.getElementById('song-marquee').style.display = 'block';
-
-  async function poll() {
-    try {
-      const response = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
-        headers: { Authorization: 'Bearer ' + token }
-      });
-      if (response.status === 401) {
-        console.log('Token expired or invalid. You must refresh token on server.');
-        return;
-      }
-      if (response.status === 204) {
-        document.getElementById('scroll-text').textContent = 'Not playing';
-        return;
-      }
-      if (!response.ok) {
-        console.error('Now playing API', await response.text());
-        return;
-      }
-      const data = await response.json();
-      const track = data?.item;
-      if (track) {
-        const text = `${track.name} — ${track.artists.map(a=>a.name).join(', ')}`;
-        document.getElementById('scroll-text').textContent = text;
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  // initial
-  await poll();
-  if (nowPlayingInterval) clearInterval(nowPlayingInterval);
-  nowPlayingInterval = setInterval(poll, 2000);
-}
-
-/* Run handler on page load to catch redirect */
-handleRedirect();
-
-/* If already have token in localStorage (from earlier), start polling */
-const existingToken = localStorage.getItem('spotify_access_token');
-if (existingToken) {
-  startNowPlaying(existingToken);
-}
+// Example: Update team tags
+document.getElementById('update-tags').onclick = () => {
+  const t1 = document.getElementById('team1-tag').value;
+  const t2 = document.getElementById('team2-tag').value;
+  alert('Team tags updated: ' + t1 + ' vs ' + t2);
+};
 
 </script>
+
 </body>
 </html>
