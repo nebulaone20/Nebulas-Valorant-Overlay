@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Overlay Console</title>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background: #111;
+    color: #eee;
+    font-family: Arial, sans-serif;
+  }
+  header {
+    background: #1a1a1a;
+    padding: 20px;
+    text-align: center;
+    font-size: 24px;
+    border-bottom: 2px solid #333;
+  }
+  main {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 20px;
+    gap: 20px;
+  }
+  .panel {
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 20px;
+    flex: 1 1 300px;
+    min-width: 300px;
+  }
+  .panel h2 {
+    margin-top: 0;
+    font-size: 18px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 8px;
+  }
+  .panel button {
+    padding: 10px 16px;
+    background: #1db954;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .panel input, .panel select {
+    width: 100%;
+    padding: 8px;
+    margin: 8px 0 12px;
+    background: #333;
+    border: 1px solid #444;
+    color: #eee;
+    border-radius: 4px;
+  }
+  .panel label {
+    display: block;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  footer {
+    text-align: center;
+    padding: 10px;
+    color: #777;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<header>Overlay Control Console</header>
+
+<main>
+  <div class="panel" id="spotify-panel">
+    <h2>Spotify / Now Playing</h2>
+    <button id="login-btn">Connect Spotify</button>
+    <div id="user-info" style="display:none; margin-top:10px;">
+      <p id="user-name">–</p>
+      <p id="track-info">Not playing</p>
+    </div>
+  </div>
+
+  <div class="panel" id="overlay-settings">
+    <h2>Overlay Settings</h2>
+    <label for="bg-video-url">Background video URL</label>
+    <input type="text" id="bg-video-url" placeholder="e.g. https://.../BGLoop.webm" />
+    <button id="update-bg">Update Background</button>
+
+    <label for="team1-tag">Team 1 Tag</label>
+    <input type="text" id="team1-tag" placeholder="[TLV]" />
+    <label for="team2-tag">Team 2 Tag</label>
+    <input type="text" id="team2-tag" placeholder="[SRG]" />
+    <button id="update-tags">Update Tags</button>
+  </div>
+
+  <div class="panel" id="other-panel">
+    <h2>Other Controls</h2>
+    <!-- Put more settings/inputs/buttons here -->
+    <p>–</p>
+  </div>
+</main>
+
+<footer>© Nebulas Overlay Console</footer>
+
+<script>
+// Example: Spotify login logic (you can paste your PKCE code here)
+
+document.getElementById('login-btn').onclick = () => {
+  // your auth logic or redirect to auth flow
+  console.log('Login click — start Spotify auth flow');
+};
+
+// Example: Update background video URL
+document.getElementById('update-bg').onclick = () => {
+  const url = document.getElementById('bg-video-url').value;
+  // send this to overlay or store it so overlay picks it up
+  alert('You set background video to: ' + url);
+};
+
+// Example: Update team tags
+document.getElementById('update-tags').onclick = () => {
+  const t1 = document.getElementById('team1-tag').value;
+  const t2 = document.getElementById('team2-tag').value;
+  alert('Team tags updated: ' + t1 + ' vs ' + t2);
+};
+
+</script>
+
+</body>
+</html>
