@@ -2,236 +2,75 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Intermission</title>
+<title>Intermission Overlay</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <style>
-    * { box-sizing: border-box; }
-
-    html, body {
+    body {
+        background: rgba(0,0,0,0);
         margin: 0;
-        width: 1920px;
-        height: 1080px;
         overflow: hidden;
         font-family: Arial, sans-serif;
-        position: relative;
+        color: white;
     }
 
-    #bg-video {
+    #wrapper {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 1920px;
-        height: 1080px;
-        object-fit: cover;
-        z-index: -2;
-        pointer-events: none;
-    }
-
-    body::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.25);
-        z-index: -1;
-        pointer-events: none;
-    }
-
-    .box {
-        position: absolute;
-        background: rgba(22, 22, 22, 0.53);
-    }
-
-    #sponsor-box { top: 40px; left: 40px; width: 540px; height: 130px; }
-
-    #main-box {
-        top: 190px; left: 40px;
-        width: 1920px; height: 1080px;
-        transform-origin: top left;
-        transform: scale(0.5469, 0.5741);
-        overflow: hidden;
-    }
-
-    #timer-box {
-        top: 40px; right: 40px;
-        width: 570px; height: 110px;
-        background: #000;
-        opacity: 90%;
-        clip-path: polygon(0 0, 100% 0, 100% 100%, 8% 100%, 0 73%);
-    }
-
-    #match-box {
-        top: 170px; right: 40px;
-        width: 570px; height: 860px;
-        clip-path: polygon(0 0, 100% 0, 100% 100%, 9% 100%, 0 95%);
-    }
-
-    #match-box-bar-left {
-        background: #01091D; height: 5px; width: 90px;
-        left: 35px; top: 430px;
-    }
-
-    #match-box-bar-right {
-        background: #01091D; height: 5px; width: 90px;
-        left: 445px; top: 430px;
-    }
-
-    #match-box-vs-text {
-        position: absolute;
-        top: 418px; left: 50%;
-        transform: translateX(-50%);
-        color: white; font-size: 20px;
-        font-weight: bold; letter-spacing: 3px;
-    }
-
-    #team-top-tag, #team-bottom-tag {
-        position: absolute;
+        top: 50%;
         left: 50%;
-        transform: translateX(-50%);
-        color: white;
-        font-size: 22px;
-        letter-spacing: 3px;
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }
+
+    .tri {
+        font-size: 60px;
         font-weight: bold;
+        padding: 10px;
     }
 
-    #team-top-tag { top: 340px; }
-    #team-bottom-tag { top: 506px; }
-
-    /* ───────── MUSIC BOX ───────── */
-    #music-box {
-        bottom: 50px;
-        left: 60px;
-        width: 600px;
-        height: 30px;
-        background: #161616;
-        overflow: hidden;
-        white-space: nowrap;
-    }
-
-    #scroll-container {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-    }
-
-    #scroll-text {
-        position: absolute;
-        top: 5px;
-        white-space: nowrap;
-        font-size: 16px;
-        color: white;
-        animation: scroll 12s linear infinite;
-    }
-
-    @keyframes scroll {
-        0% { left: -100%; }
-        100% { left: 100%; }
-    }
-
+    #topTri { color: #ff5555; }
+    #bottomTri { color: #55aaff; }
 </style>
-</head>
 
+</head>
 <body>
 
-<!-- BACKGROUND VIDEO -->
-<video id="bg-video" autoplay muted loop playsinline>
-    <source src="BGLoop.webm" type="video/webm">
-</video>
-
-<div id="sponsor-box" class="box"></div>
-<div id="main-box" class="box"></div>
-<div id="timer-box" class="box"></div>
-
-<div id="match-box" class="box">
-    <div id="match-box-bar-left" class="box"></div>
-    <div id="match-box-bar-right" class="box"></div>
-    <div id="match-box-vs-text">VS</div>
-
-    <!-- TEAM TAGS (LIVE FROM FIREBASE) -->
-    <div id="team-top-tag">[TOP]</div>
-    <div id="team-bottom-tag">[BOT]</div>
+<div id="wrapper">
+    <div id="topTri" class="tri"></div>
+    <div id="bottomTri" class="tri"></div>
 </div>
-
-<!-- MUSIC BAR -->
-<div id="music-box" class="box">
-    <div id="scroll-container">
-        <div id="scroll-text">Not playing</div>
-    </div>
-</div>
-
-<!-- FIREBASE -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-/* -------------------------------
-   🔥 FIREBASE INIT
---------------------------------*/
+/* ----------------------------
+   Firebase Init
+----------------------------- */
 const firebaseConfig = {
-    apiKey: "AIzaSyCZaiLNBoOtcPPaCupRXAttm0KlV8xuMUw",
-    authDomain: "nebulas-overlay.firebaseapp.com",
-    databaseURL: "https://nebulas-overlay-default-rtdb.firebaseio.com",
-    projectId: "nebulas-overlay",
-    storageBucket: "nebulas-overlay.firebasestorage.app",
-    messagingSenderId: "369414654740",
-    appId: "1:369414654740:web:808bff413fd75084b15001"
+    apiKey: "YOUR-KEY",
+    authDomain: "YOUR.firebaseapp.com",
+    projectId: "YOUR",
+    storageBucket: "YOUR.appspot.com",
+    messagingSenderId: "YOUR",
+    appId: "YOUR"
 };
 
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const db = firebase.firestore();
 
-/* -------------------------------
-   🔥 TEAM TAGS (LIVE)
---------------------------------*/
-db.ref("intermission/tags/top").on("value", snap => {
-    document.getElementById("team-top-tag").textContent = snap.val() || "[TOP]";
+/* ----------------------------
+   Live Updating TRI Codes
+----------------------------- */
+db.collection("intermission").doc("tags")
+.onSnapshot(doc => {
+    if (!doc.exists) return;
+
+    const data = doc.data();
+    document.getElementById("topTri").innerText = data.top || "";
+    document.getElementById("bottomTri").innerText = data.bottom || "";
 });
-
-db.ref("intermission/tags/bottom").on("value", snap => {
-    document.getElementById("team-bottom-tag").textContent = snap.val() || "[BOT]";
-});
-
-/* -------------------------------
-   🎵 SPOTIFY SCROLLING
---------------------------------*/
-let token = localStorage.getItem("spotify_access_token");
-
-async function pollNowPlaying() {
-    if (!token) {
-        document.getElementById("scroll-text").textContent = "Not connected";
-        return;
-    }
-
-    try {
-        const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
-            headers: { "Authorization": "Bearer " + token }
-        });
-
-        if (res.status === 204 || !res.ok) {
-            document.getElementById("scroll-text").textContent = "Not playing";
-            return;
-        }
-
-        const data = await res.json();
-        const track = data.item;
-
-        if (!track) {
-            document.getElementById("scroll-text").textContent = "Not playing";
-            return;
-        }
-
-        const text = `${track.name} — ${track.artists.map(a => a.name).join(", ")}`;
-        document.getElementById("scroll-text").textContent = text;
-
-    } catch (err) {
-        console.error(err);
-        document.getElementById("scroll-text").textContent = "Not playing";
-    }
-}
-
-setInterval(pollNowPlaying, 3000);
-pollNowPlaying();
-
 </script>
 
 </body>
