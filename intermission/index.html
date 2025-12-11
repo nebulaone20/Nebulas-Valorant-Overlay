@@ -95,7 +95,7 @@
     #team-top-tag { top: 340px; }
     #team-bottom-tag { top: 506px; }
 
-    /* MUSIC BOX + SCROLLING TEXT */
+    /* MUSIC BOX */
     #music-box {
         bottom: 50px;
         left: 60px;
@@ -132,6 +132,7 @@
 
 <body>
 
+<!-- BACKGROUND VIDEO -->
 <video id="bg-video" autoplay muted loop playsinline>
     <source src="BGLoop.webm" type="video/webm">
 </video>
@@ -145,8 +146,9 @@
     <div id="match-box-bar-right" class="box"></div>
     <div id="match-box-vs-text">VS</div>
 
-    <div id="team-top-tag">[TEAM 1]</div>
-    <div id="team-bottom-tag">[TEAM 2]</div>
+    <!-- TEAM TAGS (LIVE FROM FIREBASE) -->
+    <div id="team-top-tag">[TOP]</div>
+    <div id="team-bottom-tag">[BOT]</div>
 </div>
 
 <!-- MUSIC BAR -->
@@ -156,23 +158,43 @@
     </div>
 </div>
 
+<!-- 🔥 FIREBASE + SPOTIFY SCRIPT -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <script>
-/* READ ACCESS TOKEN FROM CONSOLE */
+/* -------------------------------
+   🔥 FIREBASE INIT
+--------------------------------*/
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "XXXXXXX",
+    appId: "YOUR_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* -------------------------------
+   🎯 LIVE TEAM TAGS FROM FIREBASE
+--------------------------------*/
+db.ref("intermission/teamTop").on("value", (snap) => {
+    document.getElementById("team-top-tag").textContent = snap.val() || "[TOP]";
+});
+
+db.ref("intermission/teamBottom").on("value", (snap) => {
+    document.getElementById("team-bottom-tag").textContent = snap.val() || "[BOT]";
+});
+
+/* -------------------------------
+   🎵 SPOTIFY NOW PLAYING SCROLLER
+--------------------------------*/
 let token = localStorage.getItem("spotify_access_token");
 
-/* UPDATE TEAM TAGS FROM LOCALSTORAGE */
-function updateTeamTags() {
-    const top = localStorage.getItem("team_top_tag") || "[TEAM 1]";
-    const bottom = localStorage.getItem("team_bottom_tag") || "[TEAM 2]";
-
-    document.getElementById("team-top-tag").textContent = top;
-    document.getElementById("team-bottom-tag").textContent = bottom;
-}
-
-setInterval(updateTeamTags, 1000);
-updateTeamTags();
-
-/* POLL SPOTIFY */
 async function pollNowPlaying() {
     if (!token) {
         document.getElementById("scroll-text").textContent = "Not connected";
@@ -184,12 +206,7 @@ async function pollNowPlaying() {
             headers: { "Authorization": "Bearer " + token }
         });
 
-        if (res.status === 204) {
-            document.getElementById("scroll-text").textContent = "Not playing";
-            return;
-        }
-
-        if (!res.ok) {
+        if (res.status === 204 || !res.ok) {
             document.getElementById("scroll-text").textContent = "Not playing";
             return;
         }
@@ -211,8 +228,9 @@ async function pollNowPlaying() {
     }
 }
 
-setInterval(pollNowPlaying, 2000);
+setInterval(pollNowPlaying, 3000);
 pollNowPlaying();
+
 </script>
 
 </body>
