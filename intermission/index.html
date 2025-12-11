@@ -95,7 +95,7 @@
     #team-top-tag { top: 340px; }
     #team-bottom-tag { top: 506px; }
 
-    /* ───────── MUSIC BOX WITH SCROLL ───────── */
+    /* MUSIC BOX + SCROLLING TEXT */
     #music-box {
         bottom: 50px;
         left: 60px;
@@ -145,11 +145,11 @@
     <div id="match-box-bar-right" class="box"></div>
     <div id="match-box-vs-text">VS</div>
 
-    <div id="team-top-tag">[TLV]</div>
-    <div id="team-bottom-tag">[SRG]</div>
+    <div id="team-top-tag">[TEAM 1]</div>
+    <div id="team-bottom-tag">[TEAM 2]</div>
 </div>
 
-<!-- MUSIC BAR WITH SCROLL TEXT -->
+<!-- MUSIC BAR -->
 <div id="music-box" class="box">
     <div id="scroll-container">
         <div id="scroll-text">Not playing</div>
@@ -157,9 +157,22 @@
 </div>
 
 <script>
-/* READ TOKEN FROM CONSOLE */
+/* READ ACCESS TOKEN FROM CONSOLE */
 let token = localStorage.getItem("spotify_access_token");
 
+/* UPDATE TEAM TAGS FROM LOCALSTORAGE */
+function updateTeamTags() {
+    const top = localStorage.getItem("team_top_tag") || "[TEAM 1]";
+    const bottom = localStorage.getItem("team_bottom_tag") || "[TEAM 2]";
+
+    document.getElementById("team-top-tag").textContent = top;
+    document.getElementById("team-bottom-tag").textContent = bottom;
+}
+
+setInterval(updateTeamTags, 1000);
+updateTeamTags();
+
+/* POLL SPOTIFY */
 async function pollNowPlaying() {
     if (!token) {
         document.getElementById("scroll-text").textContent = "Not connected";
