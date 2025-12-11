@@ -1,244 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<title>Console</title>
-<style>
-  body {
-    margin: 0;
-    padding: 0;
-    background: #111;
-    color: #eee;
-    font-family: Arial, sans-serif;
-  }
-  header {
-    background: #1a1a1a;
-    padding: 20px;
-    text-align: center;
-    font-size: 24px;
-    border-bottom: 2px solid #333;
-  }
-  main {
-    display: flex;
-    flex-wrap: wrap;
-    padding: 20px;
-    gap: 20px;
-  }
-  .panel {
-    background: #222;
-    border: 1px solid #333;
-    border-radius: 6px;
-    padding: 20px;
-    flex: 1 1 300px;
-    min-width: 300px;
-  }
-  .panel h2 {
-    margin-top: 0;
-    font-size: 18px;
-    border-bottom: 1px solid #444;
-    padding-bottom: 8px;
-  }
-  .panel button {
-    padding: 10px 16px;
-    background: #1db954;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  .panel input {
-    width: 100%;
-    padding: 8px;
-    margin: 8px 0 12px;
-    background: #333;
-    border: 1px solid #444;
-    color: #eee;
-    border-radius: 4px;
-  }
-  footer {
-    text-align: center;
-    padding: 10px;
-    color: #777;
-    font-size: 12px;
-  }
-</style>
+<meta charset="utf-8">
+<title>Nebulas Overlay Console</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header>Overlay Control Console</header>
 
 <main>
-
-  <!-- SPOTIFY PANEL -->
-  <div class="panel" id="spotify-panel">
+  <!-- Spotify Panel -->
+  <div class="panel">
     <h2>Spotify / Now Playing</h2>
     <button id="login-btn">Connect Spotify</button>
 
-    <div id="user-info" style="display:none; margin-top:10px;">
-      <p id="user-name">–</p>
-      <p id="track-info">Not playing</p>
+    <div id="current-track" class="hidden">
+      <p id="track-text">Not playing</p>
     </div>
   </div>
 
-  <!-- OTHER PANELS -->
-  <div class="panel" id="overlay-settings">
-    <h2>Overlay Settings</h2>
-
-    <label>Background video URL</label>
-    <input id="bg-video-url" placeholder="https://.../video.webm">
-
-    <button id="update-bg">Update Background</button>
+  <!-- Intermission Settings -->
+  <div class="panel">
+    <h2>Intermission</h2>
 
     <label>Team 1 Tag</label>
-    <input id="team1-tag" placeholder="[TLV]">
+    <input id="team1" placeholder="[TLV]">
 
     <label>Team 2 Tag</label>
-    <input id="team2-tag" placeholder="[SRG]">
+    <input id="team2" placeholder="[SRG]">
 
-    <button id="update-tags">Update Tags</button>
+    <button id="save-tags">Save Tags</button>
   </div>
-
 </main>
 
-<footer>© Nebulas Overlay Console</footer>
-
-
-<script>
-/* -----------------------------------------------------
-   SPOTIFY PKCE CONFIG
------------------------------------------------------ */
-const CLIENT_ID = "36304abf3c674b89ba2489ab3e554e0b";
-const REDIRECT_URI = "https://nebulaone20.github.io/Nebulas-Valorant-Overlay/console/";
-const SCOPE = "user-read-playback-state user-read-currently-playing";
-
-/* -----------------------------------------------------
-   PKCE HELPERS
------------------------------------------------------ */
-function base64urlencode(str) {
-  return btoa(String.fromCharCode.apply(null, new Uint8Array(str)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-async function sha256(str) {
-  const data = new TextEncoder().encode(str);
-  return await crypto.subtle.digest("SHA-256", data);
-}
-
-function generateRandomString(length = 64) {
-  const array = new Uint8Array(length);
-  crypto.getRandomValues(array);
-  return Array.from(array, dec => ('0' + dec.toString(16)).slice(-2)).join('');
-}
-
-/* -----------------------------------------------------
-   START AUTH
------------------------------------------------------ */
-document.getElementById("login-btn").onclick = async () => {
-
-  const verifier = generateRandomString(64);
-  localStorage.setItem("spotify_verifier", verifier);
-
-  const challenge = base64urlencode(await sha256(verifier));
-
-  const params = new URLSearchParams({
-    response_type: "code",
-    client_id: CLIENT_ID,
-    scope: SCOPE,
-    code_challenge_method: "S256",
-    code_challenge: challenge,
-    redirect_uri: REDIRECT_URI
-  });
-
-  window.location = "https://accounts.spotify.com/authorize?" + params.toString();
-};
-
-/* -----------------------------------------------------
-   HANDLE REDIRECT
------------------------------------------------------ */
-async function handleRedirect() {
-
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get("code");
-  if (!code) return;
-
-  const verifier = localStorage.getItem("spotify_verifier");
-
-  const body = new URLSearchParams({
-    client_id: CLIENT_ID,
-    grant_type: "authorization_code",
-    code: code,
-    redirect_uri: REDIRECT_URI,
-    code_verifier: verifier
-  });
-
-  const res = await fetch("https://accounts.spotify.com/api/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body
-  });
-
-  const json = await res.json();
-
-  if (json.access_token) {
-    localStorage.setItem("spotify_access_token", json.access_token);
-    window.history.replaceState({}, document.title, REDIRECT_URI);
-    startNowPlaying(json.access_token);
-  }
-}
-
-handleRedirect();
-
-/* -----------------------------------------------------
-   NOW PLAYING POLLER
------------------------------------------------------ */
-async function startNowPlaying(token) {
-
-  document.getElementById("login-btn").style.display = "none";
-
-  async function update() {
-    const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
-      headers: { Authorization: "Bearer " + token }
-    });
-
-    if (res.status === 204) {
-      document.getElementById("track-info").textContent = "Not playing";
-      return;
-    }
-
-    const data = await res.json();
-    if (!data.item) return;
-
-    document.getElementById("user-info").style.display = "block";
-    document.getElementById("track-info").textContent =
-      data.item.name + " — " + data.item.artists[0].name;
-
-    localStorage.setItem("now_playing_text",
-      data.item.name + " — " + data.item.artists[0].name
-    );
-  }
-
-  update();
-  setInterval(update, 2000);
-}
-
-/* If token already exists */
-const saved = localStorage.getItem("spotify_access_token");
-if (saved) startNowPlaying(saved);
-
-/* -----------------------------------------------------
-   EXAMPLE SETTINGS BUTTONS
------------------------------------------------------ */
-document.getElementById("update-bg").onclick = () => {
-  const url = document.getElementById("bg-video-url").value;
-  localStorage.setItem("overlay_bg", url);
-};
-
-document.getElementById("update-tags").onclick = () => {
-  localStorage.setItem("overlay_team1", document.getElementById("team1-tag").value);
-  localStorage.setItem("overlay_team2", document.getElementById("team2-tag").value);
-};
-
-</script>
+<script src="spotify.js"></script>
+<script src="console.js"></script>
 
 </body>
 </html>
