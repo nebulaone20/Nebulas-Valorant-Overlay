@@ -88,8 +88,6 @@
         left: 50%;
         transform: translateX(-50%);
         color: white;
-        font-size: 18px;
-        letter-spacing: 2px;
         font-size: 22px;
         letter-spacing: 3px;
         font-weight: bold;
@@ -98,7 +96,6 @@
     #team-top-tag { top: 340px; }
     #team-bottom-tag { top: 506px; }
 
-    /* MUSIC BOX */
     /* ───────── MUSIC BOX ───────── */
     #music-box {
         bottom: 50px;
@@ -162,7 +159,6 @@
     </div>
 </div>
 
-<!-- 🔥 FIREBASE + SPOTIFY SCRIPT -->
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -185,21 +181,17 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 /* -------------------------------
-   🎯 LIVE TEAM TAGS FROM FIREBASE
    🔥 TEAM TAGS (LIVE)
 --------------------------------*/
-db.ref("intermission/teamTop").on("value", (snap) => {
 db.ref("intermission/tags/top").on("value", snap => {
     document.getElementById("team-top-tag").textContent = snap.val() || "[TOP]";
 });
 
-db.ref("intermission/teamBottom").on("value", (snap) => {
 db.ref("intermission/tags/bottom").on("value", snap => {
     document.getElementById("team-bottom-tag").textContent = snap.val() || "[BOT]";
 });
 
 /* -------------------------------
-   🎵 SPOTIFY NOW PLAYING SCROLLER
    🎵 SPOTIFY SCROLLING
 --------------------------------*/
 let token = localStorage.getItem("spotify_access_token");
