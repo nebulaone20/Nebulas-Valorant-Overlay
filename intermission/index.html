@@ -16,7 +16,6 @@
         position: relative;
     }
 
-    /* Background Video */
     #bg-video {
         position: absolute;
         top: 0;
@@ -37,65 +36,51 @@
         pointer-events: none;
     }
 
-    /* Default box style */
     .box {
         position: absolute;
-        background: rgba(22,22,22,0.53);
+        background: rgba(22, 22, 22, 0.53);
     }
 
-    /* Sponsor */
-    #sponsor-box { 
-        top: 40px; left: 40px; 
-        width: 540px; height: 130px; 
-    }
+    #sponsor-box { top: 40px; left: 40px; width: 540px; height: 130px; }
 
-    /* Main video area */
     #main-box {
-        top: 190px;
-        left: 40px;
-        width: 1920px;
-        height: 1080px;
+        top: 190px; left: 40px;
+        width: 1920px; height: 1080px;
         transform-origin: top left;
         transform: scale(0.5469, 0.5741);
         overflow: hidden;
     }
 
-    /* Timer box */
     #timer-box {
         top: 40px; right: 40px;
         width: 570px; height: 110px;
         background: #000;
         opacity: 90%;
-        clip-path: polygon(0 0,100% 0,100% 100%,8% 100%,0 73%);
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 8% 100%, 0 73%);
     }
 
-    /* Match Card */
     #match-box {
         top: 170px; right: 40px;
         width: 570px; height: 860px;
-        clip-path: polygon(0 0,100% 0,100% 100%,9% 100%,0 95%);
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 9% 100%, 0 95%);
     }
 
-    #match-box-bar-left, #match-box-bar-right {
-        position: absolute;
-        background: #01091D;
-        height: 5px;
-        width: 90px;
-        top: 430px;
+    #match-box-bar-left {
+        background: #01091D; height: 5px; width: 90px;
+        left: 35px; top: 430px;
     }
 
-    #match-box-bar-left { left: 35px; }
-    #match-box-bar-right { left: 445px; }
+    #match-box-bar-right {
+        background: #01091D; height: 5px; width: 90px;
+        left: 445px; top: 430px;
+    }
 
     #match-box-vs-text {
         position: absolute;
-        top: 418px;
-        left: 50%;
+        top: 418px; left: 50%;
         transform: translateX(-50%);
-        color: white;
-        font-size: 20px;
-        font-weight: bold;
-        letter-spacing: 3px;
+        color: white; font-size: 20px;
+        font-weight: bold; letter-spacing: 3px;
     }
 
     #team-top-tag, #team-bottom-tag {
@@ -110,67 +95,111 @@
     #team-top-tag { top: 340px; }
     #team-bottom-tag { top: 506px; }
 
-    /* MUSIC BOX SCROLLER */
+    /* ───────── MUSIC BOX WITH SCROLL ───────── */
     #music-box {
         bottom: 50px;
         left: 60px;
         width: 600px;
         height: 30px;
         background: #161616;
-        overflow: hidden; /* IMPORTANT */
-        position: absolute;
+        overflow: hidden;
+        white-space: nowrap;
     }
 
     #scroll-container {
-        position: absolute;
-        white-space: nowrap;
-        color: white;
-        font-size: 18px;
-        top: 4px;
-        animation: scrollText 12s linear infinite;
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
     }
 
-    @keyframes scrollText {
-        0% { transform: translateX(600px); }
-        100% { transform: translateX(-100%); }
+    #scroll-text {
+        position: absolute;
+        top: 5px;
+        white-space: nowrap;
+        font-size: 16px;
+        color: white;
+        animation: scroll 12s linear infinite;
     }
+
+    @keyframes scroll {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
 </style>
 </head>
 
 <body>
 
-    <video id="bg-video" autoplay muted loop playsinline>
-        <source src="BGLoop.webm" type="video/webm">
-    </video>
+<video id="bg-video" autoplay muted loop playsinline>
+    <source src="BGLoop.webm" type="video/webm">
+</video>
 
-    <div id="sponsor-box" class="box"></div>
-    <div id="main-box" class="box"></div>
-    <div id="timer-box" class="box"></div>
+<div id="sponsor-box" class="box"></div>
+<div id="main-box" class="box"></div>
+<div id="timer-box" class="box"></div>
 
-    <div id="match-box" class="box">
-        <div id="match-box-bar-left" class="box"></div>
-        <div id="match-box-bar-right" class="box"></div>
-        <div id="match-box-vs-text">VS</div>
+<div id="match-box" class="box">
+    <div id="match-box-bar-left" class="box"></div>
+    <div id="match-box-bar-right" class="box"></div>
+    <div id="match-box-vs-text">VS</div>
 
-        <div id="team-top-tag">[TLV]</div>
-        <div id="team-bottom-tag">[SRG]</div>
+    <div id="team-top-tag">[TLV]</div>
+    <div id="team-bottom-tag">[SRG]</div>
+</div>
+
+<!-- MUSIC BAR WITH SCROLL TEXT -->
+<div id="music-box" class="box">
+    <div id="scroll-container">
+        <div id="scroll-text">Not playing</div>
     </div>
-
-    <!-- MUSIC SCROLLER -->
-    <div id="music-box">
-        <div id="scroll-container">Loading...</div>
-    </div>
+</div>
 
 <script>
-/* LOAD NOW PLAYING TEXT EVERY 2 SECONDS */
-function updateScrollText() {
-    const text = localStorage.getItem("now_playing_text") || "Not Playing";
-    document.getElementById("scroll-container").textContent = text;
+/* READ TOKEN FROM CONSOLE */
+let token = localStorage.getItem("spotify_access_token");
+
+async function pollNowPlaying() {
+    if (!token) {
+        document.getElementById("scroll-text").textContent = "Not connected";
+        return;
+    }
+
+    try {
+        const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
+            headers: { "Authorization": "Bearer " + token }
+        });
+
+        if (res.status === 204) {
+            document.getElementById("scroll-text").textContent = "Not playing";
+            return;
+        }
+
+        if (!res.ok) {
+            document.getElementById("scroll-text").textContent = "Not playing";
+            return;
+        }
+
+        const data = await res.json();
+        const track = data.item;
+
+        if (!track) {
+            document.getElementById("scroll-text").textContent = "Not playing";
+            return;
+        }
+
+        const text = `${track.name} — ${track.artists.map(a => a.name).join(", ")}`;
+        document.getElementById("scroll-text").textContent = text;
+
+    } catch (err) {
+        console.error(err);
+        document.getElementById("scroll-text").textContent = "Not playing";
+    }
 }
 
-/* Update immediately then poll */
-updateScrollText();
-setInterval(updateScrollText, 2000);
+setInterval(pollNowPlaying, 2000);
+pollNowPlaying();
 </script>
 
 </body>
