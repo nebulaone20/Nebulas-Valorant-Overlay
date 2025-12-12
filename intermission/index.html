@@ -63,14 +63,13 @@
     /* Timer display centered inside timer box */
     #timer-display {
         position: absolute;
-        /* centered vertically/horizontally within the timer box */
-        left: 50%;
-        top: 50%;
+        left: 52%;
+        top: 45%;
         transform: translate(-50%, -50%);
         color: #ffffff;
         font-family: "Segoe UI", Arial, sans-serif;
         font-weight: 700;
-        font-size: 40px;
+        font-size: 100px;
         letter-spacing: 2px;
         text-shadow: 0 2px 6px rgba(0,0,0,0.7);
         pointer-events: none;
@@ -190,7 +189,7 @@
 
 <script>
 /* -------------------------------
-   🔥 FIREBASE INIT
+   FIREBASE INIT
 --------------------------------*/
 const firebaseConfig = {
     apiKey: "AIzaSyCZaiLNBoOtcPPaCupRXAttm0KlV8xuMUw",
@@ -205,10 +204,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-/* -------------------------------
-   🔥 TEAM TAGS (LIVE)
-   Path: /intermission/tags/top and /intermission/tags/bottom
---------------------------------*/
 db.ref("intermission/tags/top").on("value", snap => {
     const v = snap.val();
     document.getElementById("team-top-tag").textContent = v || "[TOP]";
@@ -219,25 +214,16 @@ db.ref("intermission/tags/bottom").on("value", snap => {
     document.getElementById("team-bottom-tag").textContent = v || "[BOT]";
 });
 
-/* -------------------------------
-   ⏱️  TIMER (LISTEN & COUNTDOWN)
-   Path: /intermission/timer
-   Expected payload examples:
-      { totalSeconds: 3600, command: "start" }   -> start countdown from 01:00:00
-      { command: "stop" }                        -> stop/pause timer (keeps current remaining)
-      { command: "reset", totalSeconds: 0 }      -> reset timer to 00:00:00 (stopped)
---------------------------------*/
 
 let timerState = {
-  totalSeconds: 0,      // remaining seconds
+  totalSeconds: 0,
   running: false,
-  initialSeconds: 0     // the value last set by console for reset reference
+  initialSeconds: 0 
 };
 
 let timerInterval = null;
 
 function clampToMax(totalSeconds) {
-  // clamp so hours <= 99. Allow up to 99:59:59
   const max = (99 * 3600) + (59 * 60) + 59;
   return Math.min(Math.max(0, Math.floor(totalSeconds)), max);
 }
@@ -283,12 +269,10 @@ function stopLocalCountdown() {
   }
 }
 
-/* Listen to Firebase timer node */
 db.ref("intermission/timer").on("value", snap => {
   const val = snap.val();
   if (!val) return;
 
-  // if totalSeconds present, clamp and set initial
   if (typeof val.totalSeconds !== 'undefined') {
     let total = Number(val.totalSeconds) || 0;
     total = clampToMax(total);
@@ -297,29 +281,19 @@ db.ref("intermission/timer").on("value", snap => {
     renderTimer();
   }
 
-  // handle command
   const cmd = (val.command || '').toString().toLowerCase();
 
   if (cmd === 'start') {
-    // if there is a server-provided reference time (optional), we could compute drift.
-    // For now: start local countdown from `timerState.totalSeconds`.
     startLocalCountdown();
   } else if (cmd === 'stop' || cmd === 'pause') {
     stopLocalCountdown();
   } else if (cmd === 'reset') {
-    // reset to initialSeconds (if provided). If totalSeconds provided, already applied above.
     stopLocalCountdown();
     timerState.totalSeconds = timerState.initialSeconds || 0;
     renderTimer();
   }
 });
 
-/* -------------------------------
-   🎵 SPOTIFY SCROLLING (reads token from console/localStorage)
-   It will display the currently playing track for the account whose token is stored in localStorage under "spotify_access_token".
-   If you want multiple people/overlays to show different accounts, each overlay tab must have the corresponding token in localStorage
-   or the console must write token-to-overlay data server-side (not recommended). Typically your Console obtains token and overlay reads shared state.
---------------------------------*/
 let spotifyToken = localStorage.getItem("spotify_access_token");
 
 async function pollNowPlaying() {
@@ -371,7 +345,6 @@ async function pollNowPlaying() {
 setInterval(pollNowPlaying, 3000);
 pollNowPlaying();
 
-/* Initial render */
 renderTimer();
 
 </script>
