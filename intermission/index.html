@@ -269,30 +269,31 @@ function stopLocalCountdown() {
   }
 }
 
-db.ref("intermission/timer").on("value", snap => {
-  const val = snap.val();
-  if (!val) return;
-
-  if (typeof val.totalSeconds !== 'undefined') {
-    let total = Number(val.totalSeconds) || 0;
+// Listen for time changes
+db.ref("intermission/timer/totalSeconds").on("value", snap => {
+    let total = Number(snap.val()) || 0;
     total = clampToMax(total);
+
     timerState.totalSeconds = total;
     timerState.initialSeconds = total;
     renderTimer();
-  }
-
-  const cmd = (val.command || '').toString().toLowerCase();
-
-  if (cmd === 'start') {
-    startLocalCountdown();
-  } else if (cmd === 'stop' || cmd === 'pause') {
-    stopLocalCountdown();
-  } else if (cmd === 'reset') {
-    stopLocalCountdown();
-    timerState.totalSeconds = timerState.initialSeconds || 0;
-    renderTimer();
-  }
 });
+
+// Listen for commands separately
+db.ref("intermission/timer/command").on("value", snap => {
+    const cmd = (snap.val() || "").toString().toLowerCase();
+
+    if (cmd === "start") {
+        startLocalCountdown();
+    } else if (cmd === "stop" || cmd === "pause") {
+        stopLocalCountdown();
+    } else if (cmd === "reset") {
+        stopLocalCountdown();
+        timerState.totalSeconds = timerState.initialSeconds || 0;
+        renderTimer();
+    }
+});
+
 
 let spotifyToken = localStorage.getItem("spotify_access_token");
 
