@@ -60,28 +60,28 @@
 <body>
 
 <header>
-  <h1>Nebulas Overlay — Console</h1>
-  <div style="margin-left:auto" class="muted">Signed in: <span id="console-user">guest</span></div>
+  <h1>Nebulas Overlay</h1>
+  <div style="margin-left:auto" class="muted">Signed Out: <span id="console-user">guest</span></div>
 </header>
 
 <div class="container">
   <nav>
     <button class="area-btn active" data-area="intermission">Intermission</button>
-    <button class="area-btn" data-area="lower-thirds">Lower Thirds</button>
-    <button class="area-btn" data-area="sponsor">Sponsor</button>
-    <button class="area-btn" data-area="timer">Timer</button>
-    <button class="area-btn" data-area="match-card">Match Card</button>
+    <button class="area-btn" data-area="lower-thirds">Main Game</button>
+    <button class="area-btn" data-area="sponsor">Map Veto</button>
+    <button class="area-btn" data-area="timer">Casters</button>
+    <button class="area-btn" data-area="match-card">Links</button>
     <button class="area-btn" data-area="settings">Settings</button>
   </nav>
 
   <main>
-    <!-- INTERMISSION PANEL (primary things working) -->
+    <!-- INTERMISSION PANEL -->
     <section id="panel-intermission" class="panel">
       <h2>Intermission</h2>
 
       <!-- SPOTIFY -->
       <div style="margin-bottom:12px">
-        <label>Spotify — Connect to fetch Now Playing</label>
+        <label>Spotify Connect to fetch Now Playing</label>
         <div style="height:10px"></div>
         <div class="row">
           <button id="spotify-connect" class="small">Connect Spotify</button>
@@ -98,21 +98,19 @@
             <div class="muted" id="spotify-username">@username</div>
           </div>
         </div>
-        <div class="footer-note">Spotify auth uses PKCE + a server-side token exchange. You must deploy the exchange endpoint (instructions below).</div>
       </div>
 
       <hr style="border:none; height:1px; background:var(--card-border); margin:14px 0" />
 
       <!-- TRI CODES -->
       <div>
-        <label>Team TRI Codes (top & bottom)</label>
+        <label>Team TRI Codes</label>
         <div style="height:10px"></div>
         <div class="row" style="gap:10px">
-          <input id="tri-top" type="text" placeholder="[TLV]" />
-          <input id="tri-bottom" type="text" placeholder="[SRG]" />
+          <input id="tri-top" type="text" placeholder="Team 1" />
+          <input id="tri-bottom" type="text" placeholder="Team 2" />
           <button id="apply-tri">Apply to Intermission</button>
         </div>
-        <div class="footer-note">Values are saved to the shared intermission record — overlays read them live.</div>
       </div>
     </section>
 
@@ -150,9 +148,6 @@
 /* ==========================
    CONFIG (save via Settings)
    ==========================
-   - You must configure two things:
-     1) Firebase Realtime Database URL (example: https://project-id-default-rtdb.firebaseio.com)
-     2) Exchange endpoint URL (server-side function that exchanges code=>tokens)
 */
 const LS_FB_DB = 'neb_overlay_fb_db';
 const LS_EXCHANGE = 'neb_overlay_exchange';
@@ -192,7 +187,6 @@ byid('save-settings').addEventListener('click', ()=>{
 /* ------------------------
    Firebase (light client)
    ------------------------ */
-/* We'll write team tags to path: /intermission/tags { top: "...", bottom: "..." } */
 async function writeIntermissionTags(top, bottom){
   const dbUrl = localStorage.getItem(LS_FB_DB);
   if(!dbUrl){ alert('Set Firebase DB URL in Settings first'); return; }
@@ -218,12 +212,6 @@ byid('apply-tri').addEventListener('click', ()=> {
 /* ------------------------
    Spotify PKCE (frontend)
    ------------------------ */
-/* NOTE:
-   - You MUST deploy a server endpoint (exchange endpoint) that accepts POST { code, code_verifier, redirect_uri }
-     and returns JSON { access_token, refresh_token, expires_in, display_name, user_id, avatar_url? }
-   - The server uses your Spotify CLIENT_SECRET (never put secret in frontend).
-   - Save the exchange endpoint URL in Settings and press "Connect Spotify".
-*/
 
 function randomString(len){
   const arr = new Uint8Array(len);
@@ -244,7 +232,7 @@ async function makeCodeChallenge(verifier){
   return base64URLEncode(hashed);
 }
 
-const CLIENT_ID = '36304abf3c674b89ba2489ab3e554e0b'; // your client id (ok to be public)
+const CLIENT_ID = '36304abf3c674b89ba2489ab3e554e0b'; 
 const REDIRECT_URI = REDIRECT_URI_DEFAULT;
 const SCOPES = 'user-read-playback-state user-read-currently-playing user-read-private';
 
@@ -268,7 +256,6 @@ byid('spotify-connect').addEventListener('click', async ()=>{
   window.location = 'https://accounts.spotify.com/authorize?' + params.toString();
 });
 
-/* handle redirect back to console with ?code=... */
 async function handleSpotifyRedirect(){
   const params = new URLSearchParams(location.search);
   const code = params.get('code');
@@ -292,7 +279,6 @@ async function handleSpotifyRedirect(){
     return;
   }
 
-  // POST to exchange endpoint (server must call Spotify /api/token with client_secret)
   byid('spotify-status').textContent = 'Exchanging code for token...';
   try{
     const resp = await fetch(EXCHANGE, {
