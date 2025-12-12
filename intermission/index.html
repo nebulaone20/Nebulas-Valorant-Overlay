@@ -14,6 +14,7 @@
         overflow: hidden;
         font-family: Arial, sans-serif;
         position: relative;
+        background: #000;
     }
 
     #bg-video {
@@ -54,9 +55,26 @@
     #timer-box {
         top: 40px; right: 40px;
         width: 570px; height: 110px;
-        background: #000;
+        background: #161616;
         opacity: 90%;
         clip-path: polygon(0 0, 100% 0, 100% 100%, 8% 100%, 0 73%);
+        overflow: hidden;
+    }
+
+    /* Timer display centered inside timer box */
+    #timer-display {
+        position: absolute;
+        /* centered vertically/horizontally within the timer box */
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        color: #ffffff;
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-weight: 700;
+        font-size: 40px;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+        pointer-events: none;
     }
 
     #match-box {
@@ -128,6 +146,10 @@
         100% { left: 100%; }
     }
 
+    /* small responsive fallback */
+    @media (max-width: 1200px) {
+      #timer-display { font-size: 28px; }
+    }
 </style>
 </head>
 
@@ -140,7 +162,11 @@
 
 <div id="sponsor-box" class="box"></div>
 <div id="main-box" class="box"></div>
-<div id="timer-box" class="box"></div>
+
+<!-- Timer box (timer display sits inside) -->
+<div id="timer-box" class="box">
+    <div id="timer-display">00:00:00</div>
+</div>
 
 <div id="match-box" class="box">
     <div id="match-box-bar-left" class="box"></div>
@@ -182,33 +208,147 @@ const db = firebase.database();
 
 /* -------------------------------
    🔥 TEAM TAGS (LIVE)
+   Path: /intermission/tags/top and /intermission/tags/bottom
 --------------------------------*/
 db.ref("intermission/tags/top").on("value", snap => {
-    document.getElementById("team-top-tag").textContent = snap.val() || "[TOP]";
+    const v = snap.val();
+    document.getElementById("team-top-tag").textContent = v || "[TOP]";
 });
 
 db.ref("intermission/tags/bottom").on("value", snap => {
-    document.getElementById("team-bottom-tag").textContent = snap.val() || "[BOT]";
+    const v = snap.val();
+    document.getElementById("team-bottom-tag").textContent = v || "[BOT]";
 });
 
 /* -------------------------------
-   🎵 SPOTIFY SCROLLING
+   ⏱️  TIMER (LISTEN & COUNTDOWN)
+   Path: /intermission/timer
+   Expected payload examples:
+      { totalSeconds: 3600, command: "start" }   -> start countdown from 01:00:00
+      { command: "stop" }                        -> stop/pause timer (keeps current remaining)
+      { command: "reset", totalSeconds: 0 }      -> reset timer to 00:00:00 (stopped)
 --------------------------------*/
-let token = localStorage.getItem("spotify_access_token");
+
+let timerState = {
+  totalSeconds: 0,      // remaining seconds
+  running: false,
+  initialSeconds: 0     // the value last set by console for reset reference
+};
+
+let timerInterval = null;
+
+function clampToMax(totalSeconds) {
+  // clamp so hours <= 99. Allow up to 99:59:59
+  const max = (99 * 3600) + (59 * 60) + 59;
+  return Math.min(Math.max(0, Math.floor(totalSeconds)), max);
+}
+
+function formatHHMMSS(totalSeconds) {
+  totalSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hrs = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+  const hh = String(Math.min(hrs, 99)).padStart(2, '0');
+  const mm = String(mins).padStart(2, '0');
+  const ss = String(secs).padStart(2, '0');
+  return `${hh}:${mm}:${ss}`;
+}
+
+function renderTimer() {
+  document.getElementById('timer-display').textContent = formatHHMMSS(timerState.totalSeconds);
+}
+
+function startLocalCountdown() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerState.running = true;
+  timerInterval = setInterval(() => {
+    if (!timerState.running) return;
+    if (timerState.totalSeconds <= 0) {
+      timerState.totalSeconds = 0;
+      renderTimer();
+      timerState.running = false;
+      clearInterval(timerInterval);
+      timerInterval = null;
+      return;
+    }
+    timerState.totalSeconds = clampToMax(timerState.totalSeconds - 1);
+    renderTimer();
+  }, 1000);
+}
+
+function stopLocalCountdown() {
+  timerState.running = false;
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+/* Listen to Firebase timer node */
+db.ref("intermission/timer").on("value", snap => {
+  const val = snap.val();
+  if (!val) return;
+
+  // if totalSeconds present, clamp and set initial
+  if (typeof val.totalSeconds !== 'undefined') {
+    let total = Number(val.totalSeconds) || 0;
+    total = clampToMax(total);
+    timerState.totalSeconds = total;
+    timerState.initialSeconds = total;
+    renderTimer();
+  }
+
+  // handle command
+  const cmd = (val.command || '').toString().toLowerCase();
+
+  if (cmd === 'start') {
+    // if there is a server-provided reference time (optional), we could compute drift.
+    // For now: start local countdown from `timerState.totalSeconds`.
+    startLocalCountdown();
+  } else if (cmd === 'stop' || cmd === 'pause') {
+    stopLocalCountdown();
+  } else if (cmd === 'reset') {
+    // reset to initialSeconds (if provided). If totalSeconds provided, already applied above.
+    stopLocalCountdown();
+    timerState.totalSeconds = timerState.initialSeconds || 0;
+    renderTimer();
+  }
+});
+
+/* -------------------------------
+   🎵 SPOTIFY SCROLLING (reads token from console/localStorage)
+   It will display the currently playing track for the account whose token is stored in localStorage under "spotify_access_token".
+   If you want multiple people/overlays to show different accounts, each overlay tab must have the corresponding token in localStorage
+   or the console must write token-to-overlay data server-side (not recommended). Typically your Console obtains token and overlay reads shared state.
+--------------------------------*/
+let spotifyToken = localStorage.getItem("spotify_access_token");
 
 async function pollNowPlaying() {
-    if (!token) {
-        document.getElementById("scroll-text").textContent = "Not connected";
+    spotifyToken = localStorage.getItem("spotify_access_token");
+    const scrollTextEl = document.getElementById("scroll-text");
+    if (!spotifyToken) {
+        scrollTextEl.textContent = "Not connected";
         return;
     }
 
     try {
         const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
-            headers: { "Authorization": "Bearer " + token }
+            headers: { "Authorization": "Bearer " + spotifyToken }
         });
 
-        if (res.status === 204 || !res.ok) {
-            document.getElementById("scroll-text").textContent = "Not playing";
+        if (res.status === 204) {
+            scrollTextEl.textContent = "Not playing";
+            return;
+        }
+
+        if (res.status === 401) {
+            // token expired/invalid — overlay itself cannot refresh (needs server). Show not connected.
+            scrollTextEl.textContent = "Not playing";
+            return;
+        }
+
+        if (!res.ok) {
+            scrollTextEl.textContent = "Not playing";
             return;
         }
 
@@ -216,21 +356,24 @@ async function pollNowPlaying() {
         const track = data.item;
 
         if (!track) {
-            document.getElementById("scroll-text").textContent = "Not playing";
+            scrollTextEl.textContent = "Not playing";
             return;
         }
 
         const text = `${track.name} — ${track.artists.map(a => a.name).join(", ")}`;
-        document.getElementById("scroll-text").textContent = text;
+        scrollTextEl.textContent = text;
 
     } catch (err) {
-        console.error(err);
+        console.error('Spotify polling error', err);
         document.getElementById("scroll-text").textContent = "Not playing";
     }
 }
 
 setInterval(pollNowPlaying, 3000);
 pollNowPlaying();
+
+/* Initial render */
+renderTimer();
 
 </script>
 
