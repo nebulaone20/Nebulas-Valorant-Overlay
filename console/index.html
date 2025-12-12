@@ -41,9 +41,10 @@
   .panel h2{margin:0 0 10px 0; font-size:16px}
   .row{display:flex; gap:12px; align-items:center}
   label{font-size:13px; color:var(--muted)}
-  input[type="text"], select {
+  input[type="text"], input[type="number"], select {
     width:100%; padding:9px 10px; border-radius:8px; background:#0b0d0f; color:#eaf0f8; border:1px solid rgba(255,255,255,0.03)
   }
+  input[type="number"]{ max-width:110px; }
   button { padding:10px 12px; border-radius:8px; border:0; cursor:pointer; background:var(--accent); color:#fff; font-weight:600 }
   .muted { color:var(--muted); font-size:13px }
   .small { font-size:13px; padding:8px 10px; border-radius:8px }
@@ -53,6 +54,8 @@
   .spotify-name { font-weight:600 }
   .footer-note { color:var(--muted); font-size:12px; margin-top:8px }
 
+  .timer-inputs input { width:80px; }
+
   /* quick responsive */
   @media (max-width:900px){ .container{flex-direction:column} nav{width:100%} main{min-width:unset} }
 </style>
@@ -60,28 +63,28 @@
 <body>
 
 <header>
-  <h1>Nebulas Overlay</h1>
-  <div style="margin-left:auto" class="muted">Signed Out: <span id="console-user">guest</span></div>
+  <h1>Nebulas Overlay — Console</h1>
+  <div style="margin-left:auto" class="muted">Signed in: <span id="console-user">guest</span></div>
 </header>
 
 <div class="container">
   <nav>
     <button class="area-btn active" data-area="intermission">Intermission</button>
-    <button class="area-btn" data-area="lower-thirds">Main Game</button>
-    <button class="area-btn" data-area="sponsor">Map Veto</button>
-    <button class="area-btn" data-area="timer">Casters</button>
-    <button class="area-btn" data-area="match-card">Links</button>
+    <button class="area-btn" data-area="lower-thirds">Lower Thirds</button>
+    <button class="area-btn" data-area="sponsor">Sponsor</button>
+    <button class="area-btn" data-area="timer">Timer</button>
+    <button class="area-btn" data-area="match-card">Match Card</button>
     <button class="area-btn" data-area="settings">Settings</button>
   </nav>
 
   <main>
-    <!-- INTERMISSION PANEL -->
+    <!-- INTERMISSION PANEL (primary things working) -->
     <section id="panel-intermission" class="panel">
-      <h2>Intermission</h2>
+      <h2>Intermission — Live Controls</h2>
 
       <!-- SPOTIFY -->
       <div style="margin-bottom:12px">
-        <label>Spotify Connect to fetch Now Playing</label>
+        <label>Spotify — Connect to fetch Now Playing</label>
         <div style="height:10px"></div>
         <div class="row">
           <button id="spotify-connect" class="small">Connect Spotify</button>
@@ -91,30 +94,71 @@
 
         <div id="spotify-status" style="margin-top:12px" class="muted">Not connected</div>
 
+        <div id="spotify-user" class="spotify-info hidden" style="margin-top:12px">
+          <div class="spotify-avatar" id="spotify-avatar"></div>
           <div>
+            <div id="spotify-display" class="spotify-name">—</div>
+            <div class="muted" id="spotify-username">@username</div>
           </div>
         </div>
+        <div class="footer-note">Spotify auth uses PKCE + a server-side token exchange. You must deploy the exchange endpoint (instructions below).</div>
       </div>
 
       <hr style="border:none; height:1px; background:var(--card-border); margin:14px 0" />
 
       <!-- TRI CODES -->
-      <div>
-        <label>Team TRI Codes</label>
+      <div style="margin-bottom:12px">
+        <label>Team TRI Codes (top & bottom)</label>
         <div style="height:10px"></div>
         <div class="row" style="gap:10px">
-          <input id="tri-top" type="text" placeholder="Team 1" />
-          <input id="tri-bottom" type="text" placeholder="Team 2" />
+          <input id="tri-top" type="text" placeholder="TLV" maxlength="4"/>
+          <input id="tri-bottom" type="text" placeholder="SRG" maxlength="4"/>
           <button id="apply-tri">Apply to Intermission</button>
         </div>
+        <div class="footer-note">Enter 2–4 characters (letters/numbers). Console will wrap them in brackets when writing: e.g. <code>sen</code> -> <code>[sen]</code>.</div>
+      </div>
+
+      <hr style="border:none; height:1px; background:var(--card-border); margin:14px 0" />
+
+      <!-- TIMER CONTROLS (Option B + Option 1) -->
+      <div>
+        <label>Intermission Timer (set countdown)</label>
+        <div style="height:10px"></div>
+
+        <div class="row timer-inputs" style="align-items:center;">
+          <div>
+            <label class="muted">Hours (0–99)</label>
+            <input id="timer-hours" type="number" min="0" max="99" value="0" />
+          </div>
+          <div>
+            <label class="muted">Minutes (0–59)</label>
+            <input id="timer-mins" type="number" min="0" max="59" value="0" />
+          </div>
+          <div>
+            <label class="muted">Seconds (0–59)</label>
+            <input id="timer-secs" type="number" min="0" max="59" value="0" />
+          </div>
+
+          <div style="flex:1"></div>
+        </div>
+
+        <div style="height:10px"></div>
+        <div class="row">
+          <button id="timer-start">Start Timer</button>
+          <button id="timer-stop" style="background:#c43;">Stop</button>
+          <button id="timer-reset" style="background:#666;">Reset</button>
+          <div style="flex:1"></div>
+        </div>
+
+        <div class="footer-note" style="margin-top:10px">Start writes a single record to Firebase `/intermission/timer`. Overlays read it live and display inside the timer box.</div>
       </div>
     </section>
 
     <!-- placeholder panels -->
-    <section id="main-game" class="panel hidden"><h2>Lower Thirds</h2><p class="muted">Controls coming soon.</p></section>
-    <section id="map-veto" class="panel hidden"><h2>Sponsor</h2><p class="muted">Controls coming soon.</p></section>
-    <section id="casters" class="panel hidden"><h2>Timer</h2><p class="muted">Controls coming soon.</p></section>
-    <section id="links" class="panel hidden"><h2>Match Card</h2><p class="muted">Controls coming soon.</p></section>
+    <section id="panel-lower-thirds" class="panel hidden"><h2>Lower Thirds</h2><p class="muted">Controls coming soon.</p></section>
+    <section id="panel-sponsor" class="panel hidden"><h2>Sponsor</h2><p class="muted">Controls coming soon.</p></section>
+    <section id="panel-timer" class="panel hidden"><h2>Timer</h2><p class="muted">Controls coming soon.</p></section>
+    <section id="panel-match-card" class="panel hidden"><h2>Match Card</h2><p class="muted">Controls coming soon.</p></section>
 
     <!-- settings: firebase + exchange endpoint -->
     <section id="panel-settings" class="panel hidden">
@@ -143,8 +187,7 @@
 <script>
 /* ==========================
    CONFIG (save via Settings)
-   ==========================
-*/
+   ========================== */
 const LS_FB_DB = 'neb_overlay_fb_db';
 const LS_EXCHANGE = 'neb_overlay_exchange';
 const LS_REDIRECT = 'neb_overlay_redirect';
@@ -181,12 +224,11 @@ byid('save-settings').addEventListener('click', ()=>{
 });
 
 /* ------------------------
-   Firebase (light client)
+   Firebase write helpers
    ------------------------ */
 async function writeIntermissionTags(top, bottom){
   const dbUrl = localStorage.getItem(LS_FB_DB);
   if(!dbUrl){ alert('Set Firebase DB URL in Settings first'); return; }
-  // simple unauthenticated write (configure DB rules to allow writes from your console origin or set up auth)
   const url = dbUrl.replace(/\/$/,'') + '/intermission/tags.json';
   await fetch(url, {
     method:'PUT',
@@ -195,10 +237,33 @@ async function writeIntermissionTags(top, bottom){
   });
 }
 
-/* Apply TRI codes */
+async function writeIntermissionTimer(durationSeconds, startAtMs, running){
+  const dbUrl = localStorage.getItem(LS_FB_DB);
+  if(!dbUrl){ alert('Set Firebase DB URL in Settings first'); return; }
+  const url = dbUrl.replace(/\/$/,'') + '/intermission/timer.json';
+  const payload = {
+    duration: durationSeconds,
+    start_at: startAtMs,
+    running: !!running,
+    updated_at: Date.now()
+  };
+  await fetch(url, {
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+}
+
+/* ------------------------
+   TRI codes apply (2-4 chars + brackets)
+   ------------------------ */
 byid('apply-tri').addEventListener('click', ()=> {
   let top = byid('tri-top').value.trim();
   let bottom = byid('tri-bottom').value.trim();
+
+  // normalize input: uppercase, remove surrounding brackets/spaces
+  top = top.replace(/[\[\]\s]/g,'').toUpperCase();
+  bottom = bottom.replace(/[\[\]\s]/g,'').toUpperCase();
 
   // force min 2 chars, max 4 chars
   if (top.length < 2 || top.length > 4) {
@@ -214,16 +279,83 @@ byid('apply-tri').addEventListener('click', ()=> {
   top = `[${top}]`;
   bottom = `[${bottom}]`;
 
-  writeIntermissionTags(top, bottom).catch(err=>{
+  writeIntermissionTags(top, bottom).then(()=> {
+    alert('TRI tags updated: ' + top + ' / ' + bottom);
+  }).catch(err=>{
     console.error(err);
     alert('Error writing tags. See console.');
   });
 });
 
 /* ------------------------
+   TIMER controls (Option B + Option 1)
+   - Start: writes duration and start_at (ms) and running:true
+   - Stop: writes running:false and sets duration to remaining seconds
+   - Reset: writes running:false and duration:0
+   ------------------------ */
+byid('timer-start').addEventListener('click', async ()=>{
+  // read values
+  const h = parseInt(byid('timer-hours').value || '0', 10);
+  const m = parseInt(byid('timer-mins').value || '0', 10);
+  const s = parseInt(byid('timer-secs').value || '0', 10);
+
+  if (isNaN(h) || isNaN(m) || isNaN(s)) { alert('Invalid timer values'); return; }
+  if (h < 0 || h > 99) { alert('Hours must be 0–99'); return; }
+  if (m < 0 || m > 59) { alert('Minutes must be 0–59'); return; }
+  if (s < 0 || s > 59) { alert('Seconds must be 0–59'); return; }
+
+  const durationSeconds = h*3600 + m*60 + s;
+  if (durationSeconds <= 0) { alert('Duration must be greater than 0'); return; }
+
+  const startAt = Date.now();
+  try {
+    await writeIntermissionTimer(durationSeconds, startAt, true);
+    alert('Timer started for ' + h + 'h ' + m + 'm ' + s + 's');
+  } catch (err) {
+    console.error(err);
+    alert('Error starting timer. See console.');
+  }
+});
+
+byid('timer-stop').addEventListener('click', async ()=>{
+  // Stop: we will compute remaining by reading current DB record (best-effort)
+  const dbUrl = localStorage.getItem(LS_FB_DB);
+  if(!dbUrl){ alert('Set Firebase DB URL in Settings first'); return; }
+  try {
+    const url = dbUrl.replace(/\/$/,'') + '/intermission/timer.json';
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if (!json || !json.duration || !json.start_at) {
+      // nothing active
+      await writeIntermissionTimer(0, 0, false);
+      alert('Timer stopped (no active timer).');
+      return;
+    }
+    const elapsed = Math.floor((Date.now() - json.start_at)/1000);
+    const remaining = Math.max(0, json.duration - elapsed);
+    // write remaining seconds as new duration and set running:false
+    await writeIntermissionTimer(remaining, 0, false);
+    alert('Timer stopped with ' + remaining + ' seconds remaining.');
+  } catch (err) {
+    console.error(err);
+    alert('Error stopping timer. See console.');
+  }
+});
+
+byid('timer-reset').addEventListener('click', async ()=>{
+  try {
+    await writeIntermissionTimer(0, 0, false);
+    alert('Timer reset to 00:00:00');
+  } catch (err) {
+    console.error(err);
+    alert('Error resetting timer. See console.');
+  }
+});
+
+/* ------------------------
    Spotify PKCE (frontend)
    ------------------------ */
-
+// (PKCE implementation same as previous files; server exchange required)
 function randomString(len){
   const arr = new Uint8Array(len);
   crypto.getRandomValues(arr);
@@ -243,16 +375,14 @@ async function makeCodeChallenge(verifier){
   return base64URLEncode(hashed);
 }
 
-const CLIENT_ID = '36304abf3c674b89ba2489ab3e554e0b'; 
+const CLIENT_ID = '36304abf3c674b89ba2489ab3e554e0b'; // public ok
 const REDIRECT_URI = REDIRECT_URI_DEFAULT;
 const SCOPES = 'user-read-playback-state user-read-currently-playing user-read-private';
 
 byid('spotify-connect').addEventListener('click', async ()=>{
-  // generate verifier and challenge
   const verifier = randomString(64);
   const challenge = await makeCodeChallenge(verifier);
   localStorage.setItem('pkce_verifier', verifier);
-  // save redirect (so we can detect it)
   localStorage.setItem(LS_REDIRECT, REDIRECT_URI);
 
   const params = new URLSearchParams({
@@ -263,18 +393,15 @@ byid('spotify-connect').addEventListener('click', async ()=>{
     code_challenge_method: 'S256',
     code_challenge: challenge,
   });
-  // redirect to Spotify authorization
   window.location = 'https://accounts.spotify.com/authorize?' + params.toString();
 });
 
 async function handleSpotifyRedirect(){
   const params = new URLSearchParams(location.search);
   const code = params.get('code');
-  const state = params.get('state');
   const error = params.get('error');
   if(error){
     byid('spotify-status').textContent = 'Spotify auth error: ' + error;
-    // drop parameters
     history.replaceState({}, '', REDIRECT_URI);
     return;
   }
@@ -305,13 +432,11 @@ async function handleSpotifyRedirect(){
       return;
     }
 
-    // server should return at least: access_token, refresh_token (optional), expires_in, display_name, user_id, avatar_url
     localStorage.setItem('spotify_access_token', json.access_token);
     localStorage.setItem('spotify_refresh_token', json.refresh_token || '');
     localStorage.setItem('spotify_token_expires_at', (Date.now() + (json.expires_in*1000)).toString());
     localStorage.setItem('spotify_user_display', json.display_name || json.user_id || 'Spotify User');
 
-    // update UI
     byid('spotify-status').textContent = 'Connected as ' + (json.display_name || json.user_id);
     byid('spotify-display').textContent = (json.display_name || json.user_id);
     if(json.avatar_url) byid('spotify-avatar').style.backgroundImage = `url(${json.avatar_url})`;
@@ -319,7 +444,6 @@ async function handleSpotifyRedirect(){
     byid('spotify-connect').style.display = 'none';
     byid('spotify-disconnect').style.display = '';
 
-    // cleanup url
     history.replaceState({}, '', REDIRECT_URI);
 
   }catch(err){
@@ -329,7 +453,6 @@ async function handleSpotifyRedirect(){
   }
 }
 
-/* Disconnect */
 byid('spotify-disconnect').addEventListener('click', ()=>{
   localStorage.removeItem('spotify_access_token');
   localStorage.removeItem('spotify_refresh_token');
@@ -341,7 +464,6 @@ byid('spotify-disconnect').addEventListener('click', ()=>{
   byid('spotify-status').textContent = 'Not connected';
 });
 
-/* On load: reflect saved user */
 (function init(){
   const display = localStorage.getItem('spotify_user_display');
   if(display){
@@ -351,17 +473,15 @@ byid('spotify-disconnect').addEventListener('click', ()=>{
     byid('spotify-disconnect').style.display = '';
     byid('spotify-status').textContent = 'Connected as ' + display;
   }
-  // if redirected back with ?code=...
   handleSpotifyRedirect();
 })();
 
-/* Expose small helper for overlay to read config (optional) */
+/* Expose helper */
 window.ConsoleConfig = {
   getFirebaseDB: ()=> localStorage.getItem(LS_FB_DB) || '',
   getExchangeEndpoint: ()=> localStorage.getItem(LS_EXCHANGE) || '',
   getSpotifyToken: ()=> localStorage.getItem('spotify_access_token') || ''
 };
-
 </script>
 </body>
 </html>
