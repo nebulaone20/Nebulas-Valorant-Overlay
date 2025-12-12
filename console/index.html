@@ -197,8 +197,23 @@ async function writeIntermissionTags(top, bottom){
 
 /* Apply TRI codes */
 byid('apply-tri').addEventListener('click', ()=> {
-  const top = byid('tri-top').value.trim() || '[TLV]';
-  const bottom = byid('tri-bottom').value.trim() || '[SRG]';
+  let top = byid('tri-top').value.trim();
+  let bottom = byid('tri-bottom').value.trim();
+
+  // force min 2 chars, max 4 chars
+  if (top.length < 2 || top.length > 4) {
+    alert("Top TRI code must be 2–4 characters.");
+    return;
+  }
+  if (bottom.length < 2 || bottom.length > 4) {
+    alert("Bottom TRI code must be 2–4 characters.");
+    return;
+  }
+
+  // automatically wrap in brackets
+  top = `[${top}]`;
+  bottom = `[${bottom}]`;
+
   writeIntermissionTags(top, bottom).catch(err=>{
     console.error(err);
     alert('Error writing tags. See console.');
