@@ -95,13 +95,10 @@
         <div id="spotify-status" style="margin-top:12px" class="muted">Not connected</div>
 
         <div id="spotify-user" class="spotify-info hidden" style="margin-top:12px">
-          <div class="spotify-avatar" id="spotify-avatar"></div>
           <div>
             <div id="spotify-display" class="spotify-name">—</div>
-            <div class="muted" id="spotify-username">@username</div>
           </div>
         </div>
-        <div class="footer-note">Spotify auth uses PKCE + a server-side token exchange. You must deploy the exchange endpoint (instructions below).</div>
       </div>
 
       <hr style="border:none; height:1px; background:var(--card-border); margin:14px 0" />
@@ -111,11 +108,10 @@
         <label>Team TRI Codes (top & bottom)</label>
         <div style="height:10px"></div>
         <div class="row" style="gap:10px">
-          <input id="tri-top" type="text" placeholder="TLV" maxlength="4"/>
-          <input id="tri-bottom" type="text" placeholder="SRG" maxlength="4"/>
+          <input id="tri-top" type="text" placeholder="Team 1" maxlength="4"/>
+          <input id="tri-bottom" type="text" placeholder="Team 2" maxlength="4"/>
           <button id="apply-tri">Apply to Intermission</button>
         </div>
-        <div class="footer-note">Enter 2–4 characters (letters/numbers). Console will wrap them in brackets when writing: e.g. <code>sen</code> -> <code>[sen]</code>.</div>
       </div>
 
       <hr style="border:none; height:1px; background:var(--card-border); margin:14px 0" />
@@ -149,8 +145,6 @@
           <button id="timer-reset" style="background:#666;">Reset</button>
           <div style="flex:1"></div>
         </div>
-
-        <div class="footer-note" style="margin-top:10px">Start writes a single record to Firebase `/intermission/timer`. Overlays read it live and display inside the timer box.</div>
       </div>
     </section>
 
