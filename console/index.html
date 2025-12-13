@@ -214,7 +214,6 @@ byid('save-settings').addEventListener('click', ()=>{
   if(!db || !ex){ alert('Enter both Firebase DB URL and Exchange endpoint'); return; }
   localStorage.setItem(LS_FB_DB, db);
   localStorage.setItem(LS_EXCHANGE, ex);
-  alert('Saved. Console will use these settings locally.');
 });
 
 /* ------------------------
@@ -274,10 +273,9 @@ byid('apply-tri').addEventListener('click', ()=> {
   bottom = `[${bottom}]`;
 
   writeIntermissionTags(top, bottom).then(()=> {
-    alert('TRI tags updated: ' + top + ' / ' + bottom);
   }).catch(err=>{
     console.error(err);
-    alert('Error writing tags. See console.');
+    alert('Error writing tags.');
   });
 });
 
@@ -304,10 +302,9 @@ byid('timer-start').addEventListener('click', async ()=>{
   const startAt = Date.now();
   try {
     await writeIntermissionTimer(durationSeconds, startAt, true);
-    alert('Timer started for ' + h + 'h ' + m + 'm ' + s + 's');
   } catch (err) {
     console.error(err);
-    alert('Error starting timer. See console.');
+    alert('Error starting timer.');
   }
 });
 
@@ -322,27 +319,24 @@ byid('timer-stop').addEventListener('click', async ()=>{
     if (!json || !json.duration || !json.start_at) {
       // nothing active
       await writeIntermissionTimer(0, 0, false);
-      alert('Timer stopped (no active timer).');
       return;
     }
     const elapsed = Math.floor((Date.now() - json.start_at)/1000);
     const remaining = Math.max(0, json.duration - elapsed);
     // write remaining seconds as new duration and set running:false
     await writeIntermissionTimer(remaining, 0, false);
-    alert('Timer stopped with ' + remaining + ' seconds remaining.');
   } catch (err) {
     console.error(err);
-    alert('Error stopping timer. See console.');
+    alert('Error stopping timer.');
   }
 });
 
 byid('timer-reset').addEventListener('click', async ()=>{
   try {
     await writeIntermissionTimer(0, 0, false);
-    alert('Timer reset to 00:00:00');
   } catch (err) {
     console.error(err);
-    alert('Error resetting timer. See console.');
+    alert('Error resetting timer.');
   }
 });
 
