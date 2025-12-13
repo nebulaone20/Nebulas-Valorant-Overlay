@@ -188,167 +188,68 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-/* -------------------------------
-   FIREBASE INIT
---------------------------------*/
-const firebaseConfig = {
-    apiKey: "AIzaSyCZaiLNBoOtcPPaCupRXAttm0KlV8xuMUw",
-    authDomain: "nebulas-overlay.firebaseapp.com",
-    databaseURL: "https://nebulas-overlay-default-rtdb.firebaseio.com",
-    projectId: "nebulas-overlay",
-    storageBucket: "nebulas-overlay.firebasestorage.app",
-    messagingSenderId: "369414654740",
-    appId: "1:369414654740:web:808bff413fd75084b15001"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-db.ref("intermission/tags/top").on("value", snap => {
-    const v = snap.val();
-    document.getElementById("team-top-tag").textContent = v || "[TOP]";
-});
-
-db.ref("intermission/tags/bottom").on("value", snap => {
-    const v = snap.val();
-    document.getElementById("team-bottom-tag").textContent = v || "[BOT]";
-});
-
-
-let timerState = {
-  totalSeconds: 0,
-  running: false,
-  initialSeconds: 0 
-};
 
 let timerInterval = null;
+let timerData = {
+  duration: 0,
+  start_at: 0,
+  running: false
+};
 
-function clampToMax(totalSeconds) {
+function clamp(totalSeconds) {
   const max = (99 * 3600) + (59 * 60) + 59;
   return Math.min(Math.max(0, Math.floor(totalSeconds)), max);
 }
 
 function formatHHMMSS(totalSeconds) {
-  totalSeconds = Math.max(0, Math.floor(totalSeconds));
-  const hrs = Math.floor(totalSeconds / 3600);
-  const mins = Math.floor((totalSeconds % 3600) / 60);
-  const secs = totalSeconds % 60;
-  const hh = String(Math.min(hrs, 99)).padStart(2, '0');
-  const mm = String(mins).padStart(2, '0');
-  const ss = String(secs).padStart(2, '0');
-  return `${hh}:${mm}:${ss}`;
+  totalSeconds = clamp(totalSeconds);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return (
+    String(h).padStart(2, "0") + ":" +
+    String(m).padStart(2, "0") + ":" +
+    String(s).padStart(2, "0")
+  );
 }
 
-function renderTimer() {
-  document.getElementById('timer-display').textContent = formatHHMMSS(timerState.totalSeconds);
+function renderRemaining() {
+  let remaining = timerData.duration;
+
+  if (timerData.running && timerData.start_at) {
+    const elapsed = Math.floor((Date.now() - timerData.start_at) / 1000);
+    remaining = timerData.duration - elapsed;
+  }
+
+  remaining = clamp(remaining);
+  document.getElementById("timer-display").textContent = formatHHMMSS(remaining);
 }
 
-function startLocalCountdown() {
+function startRenderLoop() {
   if (timerInterval) clearInterval(timerInterval);
-  timerState.running = true;
-  timerInterval = setInterval(() => {
-    if (!timerState.running) return;
-    if (timerState.totalSeconds <= 0) {
-      timerState.totalSeconds = 0;
-      renderTimer();
-      timerState.running = false;
-      clearInterval(timerInterval);
-      timerInterval = null;
-      return;
-    }
-    timerState.totalSeconds = clampToMax(timerState.totalSeconds - 1);
-    renderTimer();
-  }, 1000);
+  timerInterval = setInterval(renderRemaining, 500);
 }
 
-function stopLocalCountdown() {
-  timerState.running = false;
-  if (timerInterval) {
+firebase.database().ref("intermission/timer").on("value", snap => {
+  const v = snap.val() || {};
+  timerData.duration = Number(v.duration) || 0;
+  timerData.start_at = Number(v.start_at) || 0;
+  timerData.running = !!v.running;
+
+  renderRemaining();
+
+  if (timerData.running) {
+    startRenderLoop();
+  } else if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;
   }
-}
-
-// Listen for time changes
-db.ref("intermission/timer/totalSeconds").on("value", snap => {
-    let total = Number(snap.val()) || 0;
-    total = clampToMax(total);
-
-    timerState.totalSeconds = total;
-    timerState.initialSeconds = total;
-    renderTimer();
 });
 
-// Listen for commands separately
-db.ref("intermission/timer/command").on("value", snap => {
-    const cmd = (snap.val() || "").toString().toLowerCase();
-
-    if (cmd === "start") {
-        startLocalCountdown();
-    } else if (cmd === "stop" || cmd === "pause") {
-        stopLocalCountdown();
-    } else if (cmd === "reset") {
-        stopLocalCountdown();
-        timerState.totalSeconds = timerState.initialSeconds || 0;
-        renderTimer();
-    }
-});
-
-
-let spotifyToken = localStorage.getItem("spotify_access_token");
-
-async function pollNowPlaying() {
-    spotifyToken = localStorage.getItem("spotify_access_token");
-    const scrollTextEl = document.getElementById("scroll-text");
-    if (!spotifyToken) {
-        scrollTextEl.textContent = "Not connected";
-        return;
-    }
-
-    try {
-        const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
-            headers: { "Authorization": "Bearer " + spotifyToken }
-        });
-
-        if (res.status === 204) {
-            scrollTextEl.textContent = "Not playing";
-            return;
-        }
-
-        if (res.status === 401) {
-            // token expired/invalid — overlay itself cannot refresh (needs server). Show not connected.
-            scrollTextEl.textContent = "Not playing";
-            return;
-        }
-
-        if (!res.ok) {
-            scrollTextEl.textContent = "Not playing";
-            return;
-        }
-
-        const data = await res.json();
-        const track = data.item;
-
-        if (!track) {
-            scrollTextEl.textContent = "Not playing";
-            return;
-        }
-
-        const text = `${track.name} — ${track.artists.map(a => a.name).join(", ")}`;
-        scrollTextEl.textContent = text;
-
-    } catch (err) {
-        console.error('Spotify polling error', err);
-        document.getElementById("scroll-text").textContent = "Not playing";
-    }
-}
-
-setInterval(pollNowPlaying, 3000);
-pollNowPlaying();
-
-renderTimer();
-
+// initial render
+renderRemaining();
 </script>
+
 
 </body>
 </html>
