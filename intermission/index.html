@@ -60,7 +60,6 @@
         overflow: hidden;
     }
 
-    /* Timer display centered inside timer box */
     #timer-display {
         position: absolute;
         left: 52%;
@@ -112,7 +111,6 @@
     #team-top-tag { top: 340px; }
     #team-bottom-tag { top: 506px; }
 
-    /* ───────── MUSIC BOX ───────── */
     #music-box {
         bottom: 50px;
         left: 60px;
@@ -143,17 +141,11 @@
         0% { left: -100%; }
         100% { left: 100%; }
     }
-
-    /* small responsive fallback */
-    @media (max-width: 1200px) {
-      #timer-display { font-size: 28px; }
-    }
 </style>
 </head>
 
 <body>
 
-<!-- BACKGROUND VIDEO -->
 <video id="bg-video" autoplay muted loop playsinline>
     <source src="BGLoop.webm" type="video/webm">
 </video>
@@ -161,7 +153,6 @@
 <div id="sponsor-box" class="box"></div>
 <div id="main-box" class="box"></div>
 
-<!-- Timer box (timer display sits inside) -->
 <div id="timer-box" class="box">
     <div id="timer-display">00:00:00</div>
 </div>
@@ -170,86 +161,140 @@
     <div id="match-box-bar-left" class="box"></div>
     <div id="match-box-bar-right" class="box"></div>
     <div id="match-box-vs-text">VS</div>
-
-    <!-- TEAM TAGS (LIVE FROM FIREBASE) -->
     <div id="team-top-tag">[TOP]</div>
     <div id="team-bottom-tag">[BOT]</div>
 </div>
 
-<!-- MUSIC BAR -->
 <div id="music-box" class="box">
     <div id="scroll-container">
         <div id="scroll-text">Not playing</div>
     </div>
 </div>
 
-<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-
-let timerInterval = null;
-let timerData = {
-  duration: 0,
-  start_at: 0,
-  running: false
+/* -------------------------------
+   FIREBASE INIT
+--------------------------------*/
+const firebaseConfig = {
+    apiKey: "AIzaSyCZaiLNBoOtcPPaCupRXAttm0KlV8xuMUw",
+    authDomain: "nebulas-overlay.firebaseapp.com",
+    databaseURL: "https://nebulas-overlay-default-rtdb.firebaseio.com",
+    projectId: "nebulas-overlay",
+    storageBucket: "nebulas-overlay.firebasestorage.app",
+    messagingSenderId: "369414654740",
+    appId: "1:369414654740:web:808bff413fd75084b15001"
 };
 
-function clamp(totalSeconds) {
-  const max = (99 * 3600) + (59 * 60) + 59;
-  return Math.min(Math.max(0, Math.floor(totalSeconds)), max);
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* -------------------------------
+   TEAM TAGS (UNCHANGED)
+--------------------------------*/
+db.ref("intermission/tags/top").on("value", snap => {
+    document.getElementById("team-top-tag").textContent = snap.val() || "[TOP]";
+});
+
+db.ref("intermission/tags/bottom").on("value", snap => {
+    document.getElementById("team-bottom-tag").textContent = snap.val() || "[BOT]";
+});
+
+/* =================================================
+   TIMER — FIXED (MATCHES console.html)
+   Reads:
+   intermission/timer { duration, start_at, running }
+================================================== */
+
+let timerInterval = null;
+let timerData = { duration: 0, start_at: 0, running: false };
+
+function clamp(sec) {
+    const max = (99 * 3600) + (59 * 60) + 59;
+    return Math.min(Math.max(0, Math.floor(sec)), max);
 }
 
-function formatHHMMSS(totalSeconds) {
-  totalSeconds = clamp(totalSeconds);
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  return (
-    String(h).padStart(2, "0") + ":" +
-    String(m).padStart(2, "0") + ":" +
-    String(s).padStart(2, "0")
-  );
+function formatHHMMSS(sec) {
+    sec = clamp(sec);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
 }
 
-function renderRemaining() {
-  let remaining = timerData.duration;
-
-  if (timerData.running && timerData.start_at) {
-    const elapsed = Math.floor((Date.now() - timerData.start_at) / 1000);
-    remaining = timerData.duration - elapsed;
-  }
-
-  remaining = clamp(remaining);
-  document.getElementById("timer-display").textContent = formatHHMMSS(remaining);
+function renderTimer() {
+    let remaining = timerData.duration;
+    if (timerData.running && timerData.start_at) {
+        const elapsed = Math.floor((Date.now() - timerData.start_at) / 1000);
+        remaining = timerData.duration - elapsed;
+    }
+    document.getElementById("timer-display").textContent = formatHHMMSS(remaining);
 }
 
 function startRenderLoop() {
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(renderRemaining, 500);
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(renderTimer, 500);
 }
 
-firebase.database().ref("intermission/timer").on("value", snap => {
-  const v = snap.val() || {};
-  timerData.duration = Number(v.duration) || 0;
-  timerData.start_at = Number(v.start_at) || 0;
-  timerData.running = !!v.running;
+db.ref("intermission/timer").on("value", snap => {
+    const v = snap.val() || {};
+    timerData.duration = Number(v.duration) || 0;
+    timerData.start_at = Number(v.start_at) || 0;
+    timerData.running = !!v.running;
 
-  renderRemaining();
+    renderTimer();
 
-  if (timerData.running) {
-    startRenderLoop();
-  } else if (timerInterval) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
+    if (timerData.running) startRenderLoop();
+    else if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
 });
 
-// initial render
-renderRemaining();
-</script>
+renderTimer();
 
+/* -------------------------------
+   SPOTIFY POLLING (UNCHANGED)
+--------------------------------*/
+let spotifyToken = localStorage.getItem("spotify_access_token");
+
+async function pollNowPlaying() {
+    spotifyToken = localStorage.getItem("spotify_access_token");
+    const el = document.getElementById("scroll-text");
+
+    if (!spotifyToken) {
+        el.textContent = "Not connected";
+        return;
+    }
+
+    try {
+        const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
+            headers: { Authorization: "Bearer " + spotifyToken }
+        });
+
+        if (!res.ok || res.status === 204) {
+            el.textContent = "Not playing";
+            return;
+        }
+
+        const data = await res.json();
+        if (!data.item) {
+            el.textContent = "Not playing";
+            return;
+        }
+
+        el.textContent = `${data.item.name} — ${data.item.artists.map(a => a.name).join(", ")}`;
+
+    } catch {
+        el.textContent = "Not playing";
+    }
+}
+
+setInterval(pollNowPlaying, 3000);
+pollNowPlaying();
+</script>
 
 </body>
 </html>
