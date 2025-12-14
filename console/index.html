@@ -2,215 +2,474 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Nebulas Overlay — Console</title>
+<title>Console</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-
 <style>
-:root {
-    --bg:#0f1113; --panel:#121316; --muted:#9aa4b2;
-    --accent:#1db954; --card-border:rgba(255,255,255,0.04);
-}
-*{box-sizing:border-box}
-body{
-    margin:0;font-family:Inter,"Segoe UI",Arial,sans-serif;
-    background:linear-gradient(180deg,#0b0c0d,#0f1113);
-    color:#e6eef6
-}
-header{
-    padding:18px 28px;display:flex;align-items:center;
-    border-bottom:1px solid var(--card-border)
-}
-.container{display:flex;gap:20px;padding:22px}
-nav{
-    width:220px;background:var(--panel);border-radius:8px;
-    padding:12px;border:1px solid var(--card-border)
-}
-.area-btn{
-    width:100%;padding:10px;margin-bottom:8px;
-    background:transparent;color:var(--muted);
-    border-radius:6px;border:0;cursor:pointer;text-align:left
-}
-.area-btn.active{color:#fff;background:rgba(255,255,255,.04)}
-main{flex:1;min-width:600px}
-.panel{
-    background:linear-gradient(180deg,rgba(255,255,255,.01),transparent);
-    border-radius:10px;padding:18px;margin-bottom:18px;
-    border:1px solid var(--card-border)
-}
-.panel h2{margin:0 0 12px;font-size:16px}
-.row{display:flex;gap:12px;align-items:center}
-label{font-size:13px;color:var(--muted)}
-input{
-    padding:9px 10px;border-radius:8px;background:#0b0d0f;
-    color:#eaf0f8;border:1px solid rgba(255,255,255,.03)
-}
-button{
-    padding:10px 12px;border-radius:8px;border:0;
-    cursor:pointer;background:var(--accent);
-    color:#fff;font-weight:600
-}
-.hidden{display:none!important}
-.muted{color:var(--muted);font-size:13px}
-.timer-inputs input{width:80px}
+  :root{
+    --bg:#0f1113;
+    --panel:#121316;
+    --muted:#9aa4b2;
+    --accent:#1db954;
+    --card-border: rgba(255,255,255,0.04);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:Inter, "Segoe UI", Arial, sans-serif;
+    background:linear-gradient(180deg,#0b0c0d 0%, #0f1113 100%);
+    color:#e6eef6;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{
+    padding:18px 28px;
+    display:flex; align-items:center; gap:14px;
+    border-bottom:1px solid var(--card-border);
+    background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent);
+  }
+  header h1{margin:0;font-size:18px; font-weight:600}
+  .container{display:flex; gap:20px; padding:22px; align-items:flex-start}
+  nav{width:220px; background:var(--panel); border-radius:8px; padding:12px; border:1px solid var(--card-border)}
+  nav .area-btn{
+    display:block; width:100%; text-align:left; padding:10px 12px; margin-bottom:8px;
+    background:transparent; color:var(--muted); border:1px solid transparent; border-radius:6px; cursor:pointer;
+  }
+  nav .area-btn.active{ color:#fff; background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent); border-color:rgba(255,255,255,0.02) }
+  main { flex:1; min-width:600px; }
+  .panel{
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+    border-radius:10px; padding:18px; margin-bottom:18px; border:1px solid var(--card-border);
+  }
+  .panel h2{margin:0 0 10px 0; font-size:16px}
+  .row{display:flex; gap:12px; align-items:center}
+  label{font-size:13px; color:var(--muted)}
+  input[type="text"], input[type="number"], select {
+    width:100%; padding:9px 10px; border-radius:8px; background:#0b0d0f; color:#eaf0f8; border:1px solid rgba(255,255,255,0.03)
+  }
+  input[type="number"]{ max-width:110px; }
+  button { padding:10px 12px; border-radius:8px; border:0; cursor:pointer; background:var(--accent); color:#fff; font-weight:600 }
+  .muted { color:var(--muted); font-size:13px }
+  .small { font-size:13px; padding:8px 10px; border-radius:8px }
+  .hidden { display:none !important; }
+  .spotify-info { display:flex; gap:12px; align-items:center }
+  .spotify-avatar { width:44px; height:44px; border-radius:8px; background:#222; overflow:hidden; display:flex; align-items:center; justify-content:center }
+  .spotify-name { font-weight:600 }
+  .footer-note { color:var(--muted); font-size:12px; margin-top:8px }
+
+  .timer-inputs input { width:80px; }
+
+  /* quick responsive */
+  @media (max-width:900px){ .container{flex-direction:column} nav{width:100%} main{min-width:unset} }
 </style>
 </head>
-
 <body>
 
 <header>
-    <h1>Nebulas Overlay — Console</h1>
-    <div style="margin-left:auto" class="muted">Signed in: local</div>
+  <h1>Nebulas Overlay — Console</h1>
+  <div style="margin-left:auto" class="muted">Signed in: <span id="console-user">guest</span></div>
 </header>
 
 <div class="container">
-<nav>
-    <button class="area-btn active" data-panel="intermission">Intermission</button>
-    <button class="area-btn" data-panel="settings">Settings</button>
-</nav>
+  <nav>
+    <button class="area-btn active" data-area="intermission">Intermission</button>
+    <button class="area-btn" data-area="lower-thirds">Lower Thirds</button>
+    <button class="area-btn" data-area="sponsor">Sponsor</button>
+    <button class="area-btn" data-area="timer">Timer</button>
+    <button class="area-btn" data-area="match-card">Match Card</button>
+    <button class="area-btn" data-area="settings">Settings</button>
+  </nav>
 
-<main>
+  <main>
+    <!-- INTERMISSION PANEL (primary things working) -->
+    <section id="panel-intermission" class="panel">
+      <h2>Intermission — Live Controls</h2>
 
-<section id="panel-intermission" class="panel">
-<h2>Intermission — Live Controls</h2>
+      <!-- SPOTIFY -->
+      <div style="margin-bottom:12px">
+        <label>Spotify — Connect to fetch Now Playing</label>
+        <div style="height:10px"></div>
+        <div class="row">
+          <button id="spotify-connect" class="small">Connect Spotify</button>
+          <button id="spotify-disconnect" class="small" style="background:#c43; display:none">Disconnect</button>
+          <div style="flex:1"></div>
+        </div>
 
-<!-- SPOTIFY -->
-<label>Spotify</label>
-<div class="row" style="margin:10px 0">
-    <button id="spotify-connect">Connect Spotify</button>
-    <button id="spotify-disconnect" style="background:#c43" class="hidden">Disconnect</button>
+        <div id="spotify-status" style="margin-top:12px" class="muted">Not connected</div>
+
+        <div id="spotify-user" class="spotify-info hidden" style="margin-top:12px">
+          <div>
+            <div id="spotify-display" class="spotify-name">—</div>
+          </div>
+        </div>
+      </div>
+
+      <hr style="border:none; height:1px; background:var(--card-border); margin:14px 0" />
+
+      <!-- TRI CODES -->
+      <div style="margin-bottom:12px">
+        <label>Team TRI Codes (top & bottom)</label>
+        <div style="height:10px"></div>
+        <div class="row" style="gap:10px">
+          <input id="tri-top" type="text" placeholder="Team 1" maxlength="4"/>
+          <input id="tri-bottom" type="text" placeholder="Team 2" maxlength="4"/>
+          <button id="apply-tri">Apply to Intermission</button>
+        </div>
+      </div>
+
+      <hr style="border:none; height:1px; background:var(--card-border); margin:14px 0" />
+
+      <!-- TIMER CONTROLS (Option B + Option 1) -->
+      <div>
+        <label>Intermission Timer (set countdown)</label>
+        <div style="height:10px"></div>
+
+        <div class="row timer-inputs" style="align-items:center;">
+          <div>
+            <label class="muted">Hours (0–99)</label>
+            <input id="timer-hours" type="number" min="0" max="99" value="0" />
+          </div>
+          <div>
+            <label class="muted">Minutes (0–59)</label>
+            <input id="timer-mins" type="number" min="0" max="59" value="0" />
+          </div>
+          <div>
+            <label class="muted">Seconds (0–59)</label>
+            <input id="timer-secs" type="number" min="0" max="59" value="0" />
+          </div>
+
+          <div style="flex:1"></div>
+        </div>
+
+        <div style="height:10px"></div>
+        <div class="row">
+          <button id="timer-start">Start Timer</button>
+          <button id="timer-stop" style="background:#c43;">Stop</button>
+          <button id="timer-reset" style="background:#666;">Reset</button>
+          <div style="flex:1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- placeholder panels -->
+    <section id="panel-lower-thirds" class="panel hidden"><h2>Lower Thirds</h2><p class="muted">Controls coming soon.</p></section>
+    <section id="panel-sponsor" class="panel hidden"><h2>Sponsor</h2><p class="muted">Controls coming soon.</p></section>
+    <section id="panel-timer" class="panel hidden"><h2>Timer</h2><p class="muted">Controls coming soon.</p></section>
+    <section id="panel-match-card" class="panel hidden"><h2>Match Card</h2><p class="muted">Controls coming soon.</p></section>
+
+    <!-- settings: firebase + exchange endpoint -->
+    <section id="panel-settings" class="panel hidden">
+      <h2>Settings — Setup</h2>
+      <p class="muted">You must supply both Firebase config (Realtime DB) and a token exchange endpoint (server) for Spotify PKCE.</p>
+
+      <label>Firebase Realtime Database URL</label>
+      <input id="fb-db-url" type="text" placeholder="https://PROJECT_ID-default-rtdb.firebaseio.com/" />
+
+      <label>Firebase API Key (Web)</label>
+      <input id="fb-api-key" type="text" placeholder="(from Firebase Console)" />
+
+      <label>Exchange endpoint (server) URL</label>
+      <input id="exchange-endpoint" type="text" placeholder="https://your-func.example.com/exchange" />
+      <div style="height:10px"></div>
+      <button id="save-settings">Save Settings</button>
+
+      <div class="footer-note" style="margin-top:12px">
+        <strong>Save these to localStorage</strong> — console and overlay will read them. See the setup instructions after this file for step-by-step deploy.
+      </div>
+    </section>
+
+  </main>
 </div>
-<div id="spotify-status" class="muted">Not connected</div>
-
-<hr style="margin:16px 0">
-
-<!-- TRI -->
-<label>Team TRI Codes</label>
-<div class="row" style="margin-top:10px">
-    <input id="tri-top" maxlength="4" placeholder="TOP">
-    <input id="tri-bottom" maxlength="4" placeholder="BOT">
-    <button id="apply-tri">Apply</button>
-</div>
-
-<hr style="margin:16px 0">
-
-<!-- TIMER -->
-<label>Intermission Timer</label>
-<div class="row timer-inputs" style="margin-top:10px">
-    <input id="h" type="number" min="0" max="99" value="0">
-    <input id="m" type="number" min="0" max="59" value="5">
-    <input id="s" type="number" min="0" max="59" value="0">
-</div>
-
-<div class="row" style="margin-top:10px">
-    <button id="timer-start">Start</button>
-    <button id="timer-stop" style="background:#c43">Stop</button>
-    <button id="timer-reset" style="background:#666">Reset</button>
-</div>
-</section>
-
-<section id="panel-settings" class="panel hidden">
-<h2>Settings</h2>
-<p class="muted">Spotify redirect must match this page URL.</p>
-</section>
-
-</main>
-</div>
-
-<!-- FIREBASE -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-/* ================= FIREBASE ================= */
-const firebaseConfig = {
-    apiKey: "AIzaSyCZaiLNBoOtcPPaCupRXAttm0KlV8xuMUw",
-    authDomain: "nebulas-overlay.firebaseapp.com",
-    databaseURL: "https://nebulas-overlay-default-rtdb.firebaseio.com",
-    projectId: "nebulas-overlay",
-    storageBucket: "nebulas-overlay.firebasestorage.app",
-    messagingSenderId: "369414654740",
-    appId: "1:369414654740:web:808bff413fd75084b15001"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+/* ==========================
+   CONFIG (save via Settings)
+   ========================== */
+const LS_FB_DB = 'neb_overlay_fb_db';
+const LS_EXCHANGE = 'neb_overlay_exchange';
+const LS_REDIRECT = 'neb_overlay_redirect';
+const REDIRECT_URI_DEFAULT = location.origin + location.pathname; // keep same path
+/* ========================================================= */
 
-/* ================= NAV ================= */
-document.querySelectorAll(".area-btn").forEach(btn=>{
-    btn.onclick=()=>{
-        document.querySelectorAll(".area-btn").forEach(b=>b.classList.remove("active"));
-        document.querySelectorAll(".panel").forEach(p=>p.classList.add("hidden"));
-        btn.classList.add("active");
-        document.getElementById("panel-"+btn.dataset.panel).classList.remove("hidden");
-    };
+function byid(id){ return document.getElementById(id); }
+
+/* --- area nav handling --- */
+document.querySelectorAll('.area-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.area-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const area = btn.dataset.area;
+    document.querySelectorAll('section.panel').forEach(sec=>sec.classList.add('hidden'));
+    const target = document.querySelector('#panel-' + area);
+    if(target) target.classList.remove('hidden');
+  });
 });
 
-/* ================= TRI ================= */
-apply-tri.onclick = () => {
-    db.ref("intermission/tags").set({
-        top: tri-top.value || "[TOP]",
-        bottom: tri-bottom.value || "[BOT]"
-    });
-};
+/* load saved settings if any */
+byid('fb-db-url').value = localStorage.getItem(LS_FB_DB) || '';
+byid('exchange-endpoint').value = localStorage.getItem(LS_EXCHANGE) || '';
+byid('spotify-status').textContent = 'Redirect URI: ' + REDIRECT_URI_DEFAULT;
 
-/* ================= TIMER ================= */
-function duration(){
-    return (+h.value*3600)+(+m.value*60)+(+s.value);
-}
-timer-start.onclick = ()=>{
-    const d=duration(); if(d<=0)return;
-    db.ref("intermission/timer").set({
-        duration:d,start_at:Date.now(),running:true
-    });
-};
-timer-stop.onclick = ()=>{
-    db.ref("intermission/timer").once("value").then(s=>{
-        const v=s.val(); if(!v||!v.running)return;
-        const e=Math.floor((Date.now()-v.start_at)/1000);
-        db.ref("intermission/timer").set({
-            duration:Math.max(0,v.duration-e),
-            start_at:0,running:false
-        });
-    });
-};
-timer-reset.onclick = ()=>{
-    db.ref("intermission/timer").set({
-        duration:duration(),start_at:0,running:false
-    });
-};
+/* Save settings */
+byid('save-settings').addEventListener('click', ()=>{
+  const db = byid('fb-db-url').value.trim();
+  const ex = byid('exchange-endpoint').value.trim();
+  if(!db || !ex){ alert('Enter both Firebase DB URL and Exchange endpoint'); return; }
+  localStorage.setItem(LS_FB_DB, db);
+  localStorage.setItem(LS_EXCHANGE, ex);
+});
 
-/* ================= SPOTIFY ================= */
-const CLIENT_ID = "36304abf3c674b89ba2489ab3e554e0b";
-const REDIRECT = location.origin + location.pathname;
-const scopes = "user-read-currently-playing";
-
-function updateSpotifyUI(){
-    const token = localStorage.getItem("spotify_access_token");
-    spotify-connect.classList.toggle("hidden",!!token);
-    spotify-disconnect.classList.toggle("hidden",!token);
-    spotify-status.textContent = token ? "Connected" : "Not connected";
+/* ------------------------
+   Firebase write helpers
+   ------------------------ */
+async function writeIntermissionTags(top, bottom){
+  const dbUrl = localStorage.getItem(LS_FB_DB);
+  if(!dbUrl){ alert('Set Firebase DB URL in Settings first'); return; }
+  const url = dbUrl.replace(/\/$/,'') + '/intermission/tags.json';
+  await fetch(url, {
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ top, bottom, updated_at: Date.now() })
+  });
 }
 
-spotify-connect.onclick=()=>{
-    location.href =
-        "https://accounts.spotify.com/authorize"+
-        "?response_type=token"+
-        "&client_id="+CLIENT_ID+
-        "&scope="+encodeURIComponent(scopes)+
-        "&redirect_uri="+encodeURIComponent(REDIRECT);
-};
-
-spotify-disconnect.onclick=()=>{
-    localStorage.removeItem("spotify_access_token");
-    updateSpotifyUI();
-};
-
-if(location.hash.includes("access_token")){
-    const p=new URLSearchParams(location.hash.substring(1));
-    localStorage.setItem("spotify_access_token",p.get("access_token"));
-    history.replaceState({},document.title,REDIRECT);
+async function writeIntermissionTimer(durationSeconds, startAtMs, running){
+  const dbUrl = localStorage.getItem(LS_FB_DB);
+  if(!dbUrl){ alert('Set Firebase DB URL in Settings first'); return; }
+  const url = dbUrl.replace(/\/$/,'') + '/intermission/timer.json';
+  const payload = {
+    duration: durationSeconds,
+    start_at: startAtMs,
+    running: !!running,
+    updated_at: Date.now()
+  };
+  await fetch(url, {
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
 }
-updateSpotifyUI();
+
+/* ------------------------
+   TRI codes apply (2-4 chars + brackets)
+   ------------------------ */
+byid('apply-tri').addEventListener('click', ()=> {
+  let top = byid('tri-top').value.trim();
+  let bottom = byid('tri-bottom').value.trim();
+
+  // normalize input: uppercase, remove surrounding brackets/spaces
+  top = top.replace(/[\[\]\s]/g,'').toUpperCase();
+  bottom = bottom.replace(/[\[\]\s]/g,'').toUpperCase();
+
+  // force min 2 chars, max 4 chars
+  if (top.length < 2 || top.length > 4) {
+    alert("Top TRI code must be 2–4 characters.");
+    return;
+  }
+  if (bottom.length < 2 || bottom.length > 4) {
+    alert("Bottom TRI code must be 2–4 characters.");
+    return;
+  }
+
+  // automatically wrap in brackets
+  top = `[${top}]`;
+  bottom = `[${bottom}]`;
+
+  writeIntermissionTags(top, bottom).then(()=> {
+  }).catch(err=>{
+    console.error(err);
+    alert('Error writing tags.');
+  });
+});
+
+/* ------------------------
+   TIMER controls (Option B + Option 1)
+   - Start: writes duration and start_at (ms) and running:true
+   - Stop: writes running:false and sets duration to remaining seconds
+   - Reset: writes running:false and duration:0
+   ------------------------ */
+byid('timer-start').addEventListener('click', async ()=>{
+  // read values
+  const h = parseInt(byid('timer-hours').value || '0', 10);
+  const m = parseInt(byid('timer-mins').value || '0', 10);
+  const s = parseInt(byid('timer-secs').value || '0', 10);
+
+  if (isNaN(h) || isNaN(m) || isNaN(s)) { alert('Invalid timer values'); return; }
+  if (h < 0 || h > 99) { alert('Hours must be 0–99'); return; }
+  if (m < 0 || m > 59) { alert('Minutes must be 0–59'); return; }
+  if (s < 0 || s > 59) { alert('Seconds must be 0–59'); return; }
+
+  const durationSeconds = h*3600 + m*60 + s;
+  if (durationSeconds <= 0) { alert('Duration must be greater than 0'); return; }
+
+  const startAt = Date.now();
+  try {
+    await writeIntermissionTimer(durationSeconds, startAt, true);
+  } catch (err) {
+    console.error(err);
+    alert('Error starting timer.');
+  }
+});
+
+byid('timer-stop').addEventListener('click', async ()=>{
+  // Stop: we will compute remaining by reading current DB record (best-effort)
+  const dbUrl = localStorage.getItem(LS_FB_DB);
+  if(!dbUrl){ alert('Set Firebase DB URL in Settings first'); return; }
+  try {
+    const url = dbUrl.replace(/\/$/,'') + '/intermission/timer.json';
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if (!json || !json.duration || !json.start_at) {
+      // nothing active
+      await writeIntermissionTimer(0, 0, false);
+      return;
+    }
+    const elapsed = Math.floor((Date.now() - json.start_at)/1000);
+    const remaining = Math.max(0, json.duration - elapsed);
+    // write remaining seconds as new duration and set running:false
+    await writeIntermissionTimer(remaining, 0, false);
+  } catch (err) {
+    console.error(err);
+    alert('Error stopping timer.');
+  }
+});
+
+byid('timer-reset').addEventListener('click', async ()=>{
+  try {
+    await writeIntermissionTimer(0, 0, false);
+  } catch (err) {
+    console.error(err);
+    alert('Error resetting timer.');
+  }
+});
+
+/* ------------------------
+   Spotify PKCE (frontend)
+   ------------------------ */
+// (PKCE implementation same as previous files; server exchange required)
+function randomString(len){
+  const arr = new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => ('0'+b.toString(16)).slice(-2)).join('');
+}
+async function sha256(buffer){
+  const b = new TextEncoder().encode(buffer);
+  const digest = await crypto.subtle.digest('SHA-256', b);
+  return new Uint8Array(digest);
+}
+function base64URLEncode(arr){
+  let str = btoa(String.fromCharCode.apply(null, arr));
+  return str.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function makeCodeChallenge(verifier){
+  const hashed = await sha256(verifier);
+  return base64URLEncode(hashed);
+}
+
+const CLIENT_ID = '36304abf3c674b89ba2489ab3e554e0b'; // public ok
+const REDIRECT_URI = REDIRECT_URI_DEFAULT;
+const SCOPES = 'user-read-playback-state user-read-currently-playing user-read-private';
+
+byid('spotify-connect').addEventListener('click', async ()=>{
+  const verifier = randomString(64);
+  const challenge = await makeCodeChallenge(verifier);
+  localStorage.setItem('pkce_verifier', verifier);
+  localStorage.setItem(LS_REDIRECT, REDIRECT_URI);
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    redirect_uri: REDIRECT_URI,
+    code_challenge_method: 'S256',
+    code_challenge: challenge,
+  });
+  window.location = 'https://accounts.spotify.com/authorize?' + params.toString();
+});
+
+async function handleSpotifyRedirect(){
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code');
+  const error = params.get('error');
+  if(error){
+    byid('spotify-status').textContent = 'Spotify auth error: ' + error;
+    history.replaceState({}, '', REDIRECT_URI);
+    return;
+  }
+  if(!code) return;
+
+  const verifier = localStorage.getItem('pkce_verifier');
+  if(!verifier){ byid('spotify-status').textContent = 'Missing code_verifier (start auth again)'; history.replaceState({}, '', REDIRECT_URI); return; }
+
+  const EXCHANGE = localStorage.getItem(LS_EXCHANGE);
+  if(!EXCHANGE){
+    alert('Set "Exchange endpoint" in Settings before completing sign-in.');
+    history.replaceState({}, '', REDIRECT_URI);
+    return;
+  }
+
+  byid('spotify-status').textContent = 'Exchanging code for token...';
+  try{
+    const resp = await fetch(EXCHANGE, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ code, code_verifier: verifier, redirect_uri: REDIRECT_URI })
+    });
+    const json = await resp.json();
+    if(!resp.ok){
+      console.error('Exchange error', json);
+      byid('spotify-status').textContent = 'Token exchange failed (see console)';
+      history.replaceState({}, '', REDIRECT_URI);
+      return;
+    }
+
+    localStorage.setItem('spotify_access_token', json.access_token);
+    localStorage.setItem('spotify_refresh_token', json.refresh_token || '');
+    localStorage.setItem('spotify_token_expires_at', (Date.now() + (json.expires_in*1000)).toString());
+    localStorage.setItem('spotify_user_display', json.display_name || json.user_id || 'Spotify User');
+
+    byid('spotify-status').textContent = 'Connected as ' + (json.display_name || json.user_id);
+    byid('spotify-display').textContent = (json.display_name || json.user_id);
+    if(json.avatar_url) byid('spotify-avatar').style.backgroundImage = `url(${json.avatar_url})`;
+    byid('spotify-user').classList.remove('hidden');
+    byid('spotify-connect').style.display = 'none';
+    byid('spotify-disconnect').style.display = '';
+
+    history.replaceState({}, '', REDIRECT_URI);
+
+  }catch(err){
+    console.error(err);
+    byid('spotify-status').textContent = 'Exchange error (see console)';
+    history.replaceState({}, '', REDIRECT_URI);
+  }
+}
+
+byid('spotify-disconnect').addEventListener('click', ()=>{
+  localStorage.removeItem('spotify_access_token');
+  localStorage.removeItem('spotify_refresh_token');
+  localStorage.removeItem('spotify_token_expires_at');
+  localStorage.removeItem('spotify_user_display');
+  byid('spotify-user').classList.add('hidden');
+  byid('spotify-connect').style.display = '';
+  byid('spotify-disconnect').style.display = 'none';
+  byid('spotify-status').textContent = 'Not connected';
+});
+
+(function init(){
+  const display = localStorage.getItem('spotify_user_display');
+  if(display){
+    byid('spotify-display').textContent = display;
+    byid('spotify-user').classList.remove('hidden');
+    byid('spotify-connect').style.display = 'none';
+    byid('spotify-disconnect').style.display = '';
+    byid('spotify-status').textContent = 'Connected as ' + display;
+  }
+  handleSpotifyRedirect();
+})();
+
+/* Expose helper */
+window.ConsoleConfig = {
+  getFirebaseDB: ()=> localStorage.getItem(LS_FB_DB) || '',
+  getExchangeEndpoint: ()=> localStorage.getItem(LS_EXCHANGE) || '',
+  getSpotifyToken: ()=> localStorage.getItem('spotify_access_token') || ''
+};
 </script>
-
 </body>
 </html>
