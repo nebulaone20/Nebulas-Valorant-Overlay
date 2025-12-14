@@ -63,14 +63,26 @@
     #timer-display {
         position: absolute;
         left: 52%;
-        top: 45%;
+        top: 30%;
+        transform: translate(-50%, -50%);
+        color: #ffffff;
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-weight: 700;   
+        font-size: 75px;
+        letter-spacing: 7px;
+        pointer-events: none;
+    }
+
+    #timer-event-text {
+        position: absolute;
+        left: 52%;
+        top: 85%;
         transform: translate(-50%, -50%);
         color: #ffffff;
         font-family: "Segoe UI", Arial, sans-serif;
         font-weight: 700;
-        font-size: 100px;
-        letter-spacing: 2px;
-        text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+        font-size: 20px;
+        letter-spacing: 0px;
         pointer-events: none;
     }
 
@@ -155,6 +167,7 @@
 
 <div id="timer-box" class="box">
     <div id="timer-display">00:00:00</div>
+    <div id="timer-event-text">Nebulas Overlay</div>
 </div>
 
 <div id="match-box" class="box">
@@ -175,9 +188,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-/* -------------------------------
-   FIREBASE INIT
---------------------------------*/
+
 const firebaseConfig = {
     apiKey: "AIzaSyCZaiLNBoOtcPPaCupRXAttm0KlV8xuMUw",
     authDomain: "nebulas-overlay.firebaseapp.com",
@@ -191,9 +202,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-/* -------------------------------
-   TEAM TAGS (UNCHANGED)
---------------------------------*/
 db.ref("intermission/tags/top").on("value", snap => {
     document.getElementById("team-top-tag").textContent = snap.val() || "[TOP]";
 });
@@ -201,12 +209,6 @@ db.ref("intermission/tags/top").on("value", snap => {
 db.ref("intermission/tags/bottom").on("value", snap => {
     document.getElementById("team-bottom-tag").textContent = snap.val() || "[BOT]";
 });
-
-/* =================================================
-   TIMER — FIXED (MATCHES console.html)
-   Reads:
-   intermission/timer { duration, start_at, running }
-================================================== */
 
 let timerInterval = null;
 let timerData = { duration: 0, start_at: 0, running: false };
@@ -255,9 +257,6 @@ db.ref("intermission/timer").on("value", snap => {
 
 renderTimer();
 
-/* -------------------------------
-   SPOTIFY POLLING (UNCHANGED)
---------------------------------*/
 let spotifyToken = localStorage.getItem("spotify_access_token");
 
 async function pollNowPlaying() {
