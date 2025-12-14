@@ -2,193 +2,67 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Intermission</title>
+<title>Intermission Console</title>
 
 <style>
-    * { box-sizing: border-box; }
-
-    html, body {
-        margin: 0;
-        width: 1920px;
-        height: 1080px;
-        overflow: hidden;
+    body {
+        background: #0f0f0f;
+        color: white;
         font-family: Arial, sans-serif;
-        position: relative;
+        padding: 30px;
     }
 
-    #bg-video {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 1920px;
-        height: 1080px;
-        object-fit: cover;
-        z-index: -2;
-        pointer-events: none;
+    h1 {
+        margin-top: 0;
     }
 
-    body::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.25);
-        z-index: -1;
-        pointer-events: none;
+    .row {
+        margin-bottom: 15px;
     }
 
-    .box {
-        position: absolute;
-        background: rgba(22, 22, 22, 0.53);
+    input {
+        width: 60px;
+        font-size: 18px;
+        padding: 5px;
+        text-align: center;
     }
 
-    #sponsor-box { top: 40px; left: 40px; width: 540px; height: 130px; }
-
-    #main-box {
-        top: 190px; left: 40px;
-        width: 1920px; height: 1080px;
-        transform-origin: top left;
-        transform: scale(0.5469, 0.5741);
-        overflow: hidden;
-    }
-
-    #timer-box {
-        top: 40px; right: 40px;
-        width: 570px; height: 110px;
-        background: #161616;
-        opacity: 90%;
-        clip-path: polygon(0 0, 100% 0, 100% 100%, 8% 100%, 0 73%);
-        overflow: hidden;
-    }
-
-    #timer-display {
-        position: absolute;
-        left: 52%;
-        top: 30%;
-        transform: translate(-50%, -50%);
-        color: #ffffff;
-        font-family: "Segoe UI", Arial, sans-serif;
-        font-weight: 700;   
-        font-size: 75px;
-        letter-spacing: 7px;
-        pointer-events: none;
-    }
-
-    #timer-event-text {
-        position: absolute;
-        left: 52%;
-        top: 85%;
-        transform: translate(-50%, -50%);
-        color: #ffffff;
-        font-family: "Segoe UI", Arial, sans-serif;
-        font-weight: 700;
-        font-size: 20px;
-        letter-spacing: 0px;
-        pointer-events: none;
-    }
-
-    #match-box {
-        top: 170px; right: 40px;
-        width: 570px; height: 860px;
-        clip-path: polygon(0 0, 100% 0, 100% 100%, 9% 100%, 0 95%);
-    }
-
-    #match-box-bar-left {
-        background: #01091D; height: 5px; width: 90px;
-        left: 35px; top: 430px;
-    }
-
-    #match-box-bar-right {
-        background: #01091D; height: 5px; width: 90px;
-        left: 445px; top: 430px;
-    }
-
-    #match-box-vs-text {
-        position: absolute;
-        top: 418px; left: 50%;
-        transform: translateX(-50%);
-        color: white; font-size: 20px;
-        font-weight: bold; letter-spacing: 3px;
-    }
-
-    #team-top-tag, #team-bottom-tag {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        color: white;
-        font-size: 22px;
-        letter-spacing: 3px;
-        font-weight: bold;
-    }
-
-    #team-top-tag { top: 340px; }
-    #team-bottom-tag { top: 506px; }
-
-    #music-box {
-        bottom: 50px;
-        left: 60px;
-        width: 600px;
-        height: 30px;
-        background: #161616;
-        overflow: hidden;
-        white-space: nowrap;
-    }
-
-    #scroll-container {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-    }
-
-    #scroll-text {
-        position: absolute;
-        top: 5px;
-        white-space: nowrap;
+    button {
         font-size: 16px;
-        color: white;
-        animation: scroll 12s linear infinite;
+        padding: 8px 14px;
+        margin-right: 10px;
+        cursor: pointer;
     }
 
-    @keyframes scroll {
-        0% { left: -100%; }
-        100% { left: 100%; }
+    #status {
+        margin-top: 15px;
+        opacity: 0.8;
     }
 </style>
 </head>
 
 <body>
 
-<video id="bg-video" autoplay muted loop playsinline>
-    <source src="BGLoop.webm" type="video/webm">
-</video>
+<h1>Intermission Timer</h1>
 
-<div id="sponsor-box" class="box"></div>
-<div id="main-box" class="box"></div>
-
-<div id="timer-box" class="box">
-    <div id="timer-display">00:00:00</div>
-    <div id="timer-event-text">Nebulas Overlay</div>
+<div class="row">
+    <input id="hh" type="number" min="0" max="99" value="0"> :
+    <input id="mm" type="number" min="0" max="59" value="5"> :
+    <input id="ss" type="number" min="0" max="59" value="0">
 </div>
 
-<div id="match-box" class="box">
-    <div id="match-box-bar-left" class="box"></div>
-    <div id="match-box-bar-right" class="box"></div>
-    <div id="match-box-vs-text">VS</div>
-    <div id="team-top-tag">[TOP]</div>
-    <div id="team-bottom-tag">[BOT]</div>
+<div class="row">
+    <button onclick="startTimer()">Start</button>
+    <button onclick="pauseTimer()">Pause</button>
+    <button onclick="resetTimer()">Reset</button>
 </div>
 
-<div id="music-box" class="box">
-    <div id="scroll-container">
-        <div id="scroll-text">Not playing</div>
-    </div>
-</div>
+<div id="status">Idle</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-
 const firebaseConfig = {
     apiKey: "AIzaSyCZaiLNBoOtcPPaCupRXAttm0KlV8xuMUw",
     authDomain: "nebulas-overlay.firebaseapp.com",
@@ -202,97 +76,55 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-db.ref("intermission/tags/top").on("value", snap => {
-    document.getElementById("team-top-tag").textContent = snap.val() || "[TOP]";
-});
-
-db.ref("intermission/tags/bottom").on("value", snap => {
-    document.getElementById("team-bottom-tag").textContent = snap.val() || "[BOT]";
-});
-
-let timerInterval = null;
-let timerData = { duration: 0, start_at: 0, running: false };
-
-function clamp(sec) {
-    const max = (99 * 3600) + (59 * 60) + 59;
-    return Math.min(Math.max(0, Math.floor(sec)), max);
+function getDurationSeconds() {
+    const h = Number(document.getElementById("hh").value) || 0;
+    const m = Number(document.getElementById("mm").value) || 0;
+    const s = Number(document.getElementById("ss").value) || 0;
+    return (h * 3600) + (m * 60) + s;
 }
 
-function formatHHMMSS(sec) {
-    sec = clamp(sec);
-    const h = Math.floor(sec / 3600);
-    const m = Math.floor((sec % 3600) / 60);
-    const s = sec % 60;
-    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+function startTimer() {
+    const duration = getDurationSeconds();
+    if (duration <= 0) return;
+
+    db.ref("intermission/timer").set({
+        duration: duration,
+        start_at: Date.now(),
+        running: true
+    });
+
+    document.getElementById("status").textContent = "Running";
 }
 
-function renderTimer() {
-    let remaining = timerData.duration;
-    if (timerData.running && timerData.start_at) {
-        const elapsed = Math.floor((Date.now() - timerData.start_at) / 1000);
-        remaining = timerData.duration - elapsed;
-    }
-    document.getElementById("timer-display").textContent = formatHHMMSS(remaining);
-}
+function pauseTimer() {
+    db.ref("intermission/timer").once("value").then(snap => {
+        const v = snap.val();
+        if (!v || !v.running) return;
 
-function startRenderLoop() {
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(renderTimer, 500);
-}
+        const elapsed = Math.floor((Date.now() - v.start_at) / 1000);
+        const remaining = Math.max(0, v.duration - elapsed);
 
-db.ref("intermission/timer").on("value", snap => {
-    const v = snap.val() || {};
-    timerData.duration = Number(v.duration) || 0;
-    timerData.start_at = Number(v.start_at) || 0;
-    timerData.running = !!v.running;
-
-    renderTimer();
-
-    if (timerData.running) startRenderLoop();
-    else if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
-});
-
-renderTimer();
-
-let spotifyToken = localStorage.getItem("spotify_access_token");
-
-async function pollNowPlaying() {
-    spotifyToken = localStorage.getItem("spotify_access_token");
-    const el = document.getElementById("scroll-text");
-
-    if (!spotifyToken) {
-        el.textContent = "Not connected";
-        return;
-    }
-
-    try {
-        const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
-            headers: { Authorization: "Bearer " + spotifyToken }
+        db.ref("intermission/timer").set({
+            duration: remaining,
+            start_at: 0,
+            running: false
         });
 
-        if (!res.ok || res.status === 204) {
-            el.textContent = "Not playing";
-            return;
-        }
-
-        const data = await res.json();
-        if (!data.item) {
-            el.textContent = "Not playing";
-            return;
-        }
-
-        el.textContent = `${data.item.name} — ${data.item.artists.map(a => a.name).join(", ")}`;
-
-    } catch {
-        el.textContent = "Not playing";
-    }
+        document.getElementById("status").textContent = "Paused";
+    });
 }
 
-setInterval(pollNowPlaying, 3000);
-pollNowPlaying();
+function resetTimer() {
+    const duration = getDurationSeconds();
+
+    db.ref("intermission/timer").set({
+        duration: duration,
+        start_at: 0,
+        running: false
+    });
+
+    document.getElementById("status").textContent = "Reset";
+}
 </script>
 
 </body>
